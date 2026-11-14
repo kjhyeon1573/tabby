@@ -150,7 +150,7 @@ input {
 
 @keyframes profile-detail-marquee {
     0% { transform: translateX(0); }
-    14% { transform: translateX(0); animation-timing-function: cubic-bezier(.4, 0, .15, 1); }
+    14% { transform: translateX(0); animation-timing-function: linear; }
     78% { transform: translateX(var(--marquee-distance, 0px)); }
     88% { transform: translateX(var(--marquee-distance, 0px)); animation-timing-function: cubic-bezier(.2, .9, .25, 1); }
     100% { transform: translateX(0); }
