@@ -233,6 +233,36 @@ export class ProfileTreeComponent extends BaseComponent {
         return this.profilesService.launchProfile(profile)
     }
 
+    /** Measures the hovered row's path; starts the marquee when the full path does not fit */
+    onProfileRowEnter (event: MouseEvent): void {
+        const row = event.currentTarget as HTMLElement
+        requestAnimationFrame(() => {
+            const detail = row.querySelector<HTMLElement>('.profile-detail')
+            const prefix = row.querySelector<HTMLElement>('.detail-prefix')
+            const base = row.querySelector<HTMLElement>('.detail-base')
+            if (!detail || !base || !row.matches(':hover')) {
+                return
+            }
+            const fullWidth = (prefix?.scrollWidth ?? 0) + base.offsetWidth
+            const overflow = fullWidth - detail.clientWidth
+            if (overflow > 2) {
+                detail.style.setProperty('--marquee-distance', `${-(overflow + 8)}px`)
+                detail.style.setProperty('--marquee-duration', `${Math.max(4, overflow / 25 + 2).toFixed(1)}s`)
+                detail.classList.add('marquee')
+            }
+        })
+    }
+
+    onProfileRowLeave (event: MouseEvent): void {
+        const row = event.currentTarget as HTMLElement
+        const detail = row.querySelector<HTMLElement>('.profile-detail')
+        if (detail) {
+            detail.classList.remove('marquee')
+            detail.style.removeProperty('--marquee-distance')
+            detail.style.removeProperty('--marquee-duration')
+        }
+    }
+
     /** '~/a/b/c' -> ['~/a/b/', 'c']: the sidebar shows only the last segment until hovered */
     splitDetail (detail: string): [string, string] {
         const idx = detail.lastIndexOf('/')

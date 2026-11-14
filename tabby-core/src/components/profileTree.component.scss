@@ -45,30 +45,68 @@ input {
             }
         }
 
+        // name + (optional) detail; a row normally, a column while hovered so the detail
+        // drops to a second line aligned with the name
+        .profile-label {
+            flex: 1 1 auto;
+            min-width: 0;
+            display: flex;
+            flex-direction: row;
+            align-items: baseline;
+        }
+
         .profile-detail {
             flex: 1 1 auto;
             min-width: 0;
+            margin-left: .5rem;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
             font-size: .8em;
             opacity: .55;
 
+            .detail-track {
+                display: inline-block;
+                white-space: nowrap;
+            }
+
             .detail-prefix, .detail-base {
                 display: inline-block;
                 vertical-align: bottom;
             }
 
-            // parent path is collapsed until the row is hovered, then unfolds to the left of the last segment
+            // parent path is collapsed until the row is hovered
             .detail-prefix {
                 max-width: 0;
                 overflow: hidden;
                 transition: max-width .25s ease-out;
             }
+
+            // set from onProfileRowEnter() when the full path does not fit: scroll left to the end,
+            // then jump back to the start and repeat
+            &.marquee {
+                text-overflow: clip;
+
+                .detail-track {
+                    animation: profile-detail-marquee var(--marquee-duration, 6s) linear infinite;
+                }
+            }
         }
 
-        &:hover .profile-detail .detail-prefix {
-            max-width: 40rem;
+        &:hover {
+            .profile-label {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .profile-detail {
+                margin-left: 0;
+                width: calc(100% - 2rem); // leave room for the hover actions on the right
+
+                .detail-prefix {
+                    max-width: 40rem;
+                }
+            }
         }
 
         .actions {
@@ -98,6 +136,11 @@ input {
     }
 }
 
+
+@keyframes profile-detail-marquee {
+    0%, 15% { transform: translateX(0); }
+    85%, 100% { transform: translateX(var(--marquee-distance, 0px)); }
+}
 
 :host(.mac-inset) {
     padding-top: var(--tabs-height);
