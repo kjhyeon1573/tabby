@@ -271,6 +271,37 @@ export class AppRootComponent {
         return this.config.store?.appearance.vibrancy
     }
 
+    @HostBinding('style.--side-tab-width') get sideTabWidthStyle (): string {
+        const width = Number(this.config.store?.appearance.sideTabWidth) || 200
+        return `calc(${width}px * var(--spaciness))`
+    }
+
+    /** Drag handle on the inner edge of the vertical tab bar */
+    startTabBarResize (event: MouseEvent): void {
+        if (event.button !== 0 || !this.hasVerticalTabs()) {
+            return
+        }
+        event.preventDefault()
+        const appearance = this.config.store.appearance
+        const startX = event.clientX
+        const startWidth = Number(appearance.sideTabWidth) || 200
+        const direction = appearance.tabsLocation === 'right' ? -1 : 1
+        const spaciness = Number(appearance.spaciness) || 1
+        document.body.classList.add('resizing-tab-bar')
+        const onMove = (e: MouseEvent) => {
+            const delta = (e.clientX - startX) * direction / spaciness
+            appearance.sideTabWidth = Math.round(Math.min(600, Math.max(80, startWidth + delta)))
+        }
+        const onUp = () => {
+            document.removeEventListener('mousemove', onMove)
+            document.removeEventListener('mouseup', onUp)
+            document.body.classList.remove('resizing-tab-bar')
+            this.config.save()
+        }
+        document.addEventListener('mousemove', onMove)
+        document.addEventListener('mouseup', onUp)
+    }
+
     private async getToolbarButtons (aboveZero: boolean): Promise<Command[]> {
         return (await this.commands.getCommands({ tab: this.app.activeTab ?? undefined }))
             .filter(x => x.locations?.includes(aboveZero ? CommandLocation.RightToolbar : CommandLocation.LeftToolbar))

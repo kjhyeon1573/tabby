@@ -76,6 +76,44 @@ $tab-border-radius: 4px;
     }
 }
 
+.content.tabs-on-left > .tab-bar-resizer, .content.tabs-on-right > .tab-bar-resizer {
+    flex: none;
+    position: relative;
+    z-index: 10;
+    width: 7px;
+    margin: 0 -3px;
+    cursor: col-resize;
+    -webkit-app-region: no-drag;
+
+    &::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 3px;
+        width: 1px;
+        background: var(--bs-blue);
+        opacity: 0;
+        transition: opacity 0.15s;
+    }
+
+    &:hover::after {
+        opacity: 0.8;
+    }
+}
+
+:host-context(body.resizing-tab-bar) {
+    cursor: col-resize;
+
+    .tab-bar-resizer::after {
+        opacity: 1;
+    }
+
+    tab-body {
+        pointer-events: none;
+    }
+}
+
 .content.tabs-on-left > .tab-bar.tab-bar-no-controls-overlay, .content.tabs-titlebar-enabled {
     .tabs {
         padding-top: 0 !important;
