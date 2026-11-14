@@ -99,7 +99,10 @@ export class ProfilesService {
         }
 
         const sortKey = p => `${this.resolveProfileGroupName(p.group ?? '')} / ${p.name}`
-        list.sort((a, b) => sortKey(a).localeCompare(sortKey(b)))
+        // numeric: true keeps e.g. 'tmux: 2' before 'tmux: 10'
+        list.sort((a, b) => sortKey(a).localeCompare(sortKey(b), undefined, { numeric: true, sensitivity: 'base' }))
+        // lower profile.weight floats a profile to the top of its group (default 0)
+        list.sort((a, b) => (a.weight ?? 0) - (b.weight ?? 0))
         list.sort((a, b) => (a.isBuiltin ? 1 : 0) - (b.isBuiltin ? 1 : 0))
         return options?.clone ? deepClone(list) : list
     }

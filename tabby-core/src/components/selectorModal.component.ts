@@ -78,7 +78,7 @@ export class SelectorModalComponent<T> {
             this.filteredOptions = this.options.slice().sort(
                 firstBy<SelectorOption<T>, number>(x => x.weight ?? 0)
                     .thenBy<string>(x => x.group ?? '')
-                    .thenBy<string>(x => x.name),
+                    .thenBy((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })),
             )
                 .filter(x => !x.freeInputPattern)
         } else {
