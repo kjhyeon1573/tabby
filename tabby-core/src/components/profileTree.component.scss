@@ -46,7 +46,16 @@ input {
         }
 
         &.profile-item {
-            align-items: flex-start;
+            align-items: center;
+
+            // two lines while hovered: keep the icon centred on the first line
+            &.hovered {
+                align-items: flex-start;
+
+                > .fw-20 {
+                    margin-top: calc((var(--bs-body-font-size) * var(--bs-body-line-height) - 15px) / 2);
+                }
+            }
         }
 
         // name + path. Idle: one row with the last path segment beside the name.
