@@ -35,7 +35,11 @@
                             href='#'
                         )
                             .fw-20
-                                profile-icon.ms-1([icon]='profile.icon', [color]='profile.color')
+                                profile-icon.ms-1(
+                                    [icon]='profile.icon',
+                                    [color]='profileStatus[profile.id]?.active ? activeProfileColor : profile.color',
+                                    [attr.title]='profileStatus[profile.id]?.description'
+                                )
                             span.ms-2.no-wrap {{ profile.name }}
 
                             .actions

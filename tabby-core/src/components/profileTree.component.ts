@@ -8,7 +8,9 @@ import { ConfigService } from '../services/config.service'
 import { ProfilesService } from '../services/profiles.service'
 import { AppService } from '../services/app.service'
 import { PlatformService } from '../api/platform'
-import { ProfileProvider } from '../api/index'
+import { ProfileProvider, ProfileStatus } from '../api/index'
+import { BaseTabComponent } from './baseTab.component'
+import { SplitTabComponent } from './splitTab.component'
 import { PartialProfileGroup, ProfileGroup, PartialProfile, Profile } from '../index'
 import { BaseComponent } from './base.component'
 
@@ -29,6 +31,11 @@ export class ProfileTreeComponent extends BaseComponent {
 
     filteredProfiles: PartialProfile<Profile>[] = []
     @Input() filter = ''
+
+    /** Live status per profile id, filled by ProfileProvider.getProfileStatus (e.g. tmux session exists) */
+    profileStatus: Record<string, ProfileStatus|undefined> = {}
+    activeProfileColor = 'var(--bs-green)'
+    private statusTimer: ReturnType<typeof setInterval>|null = null
 
 
     panelMinWidth = 200
@@ -52,6 +59,8 @@ export class ProfileTreeComponent extends BaseComponent {
     async ngOnInit (): Promise<void> {
         await this.loadTreeItems()
         this.subscribeUntilDestroyed(this.config.changed$, () => this.loadTreeItems())
+        this.subscribeUntilDestroyed(this.app.tabsChanged$, () => this.refreshProfileStatus())
+        this.statusTimer = setInterval(() => this.refreshProfileStatus(), 3000)
         this.app.tabsChanged$.subscribe(() => this.tabStateChanged())
         this.app.activeTabChange$.subscribe(() => this.tabStateChanged())
     }
@@ -78,6 +87,7 @@ export class ProfileTreeComponent extends BaseComponent {
         groups.sort((a, b) => (a.id === 'ungrouped' ? 0 : 1) - (b.id === 'ungrouped' ? 0 : 1))
         this.profileGroups = groups.map(g => ProfileTreeComponent.intoPartialCollapsableProfileGroup(g, profileGroupCollapsed[g.id] ?? false))
         this.rootGroups = this.profilesService.buildGroupTree(this.profileGroups)
+        this.refreshProfileStatus()
     }
 
     private async editProfile (profile: PartialProfile<Profile>): Promise<void> {
@@ -195,8 +205,57 @@ export class ProfileTreeComponent extends BaseComponent {
         // TODO: show active tab in the side panel with eye icon
     }
 
+    ngOnDestroy (): void {
+        if (this.statusTimer) {
+            clearInterval(this.statusTimer)
+            this.statusTimer = null
+        }
+        super.ngOnDestroy()
+    }
+
     async launchProfile<P extends Profile> (profile: PartialProfile<P>): Promise<any> {
+        // Stateful profiles (e.g. a named tmux session) get a single tab: focus it if it is already open
+        if (profile.id && this.profileStatus[profile.id]) {
+            const existing = this.findOpenTabForProfile(profile)
+            if (existing) {
+                this.app.selectTab(existing.top)
+                if (existing.top instanceof SplitTabComponent) {
+                    existing.top.focus(existing.tab)
+                }
+                return
+            }
+        }
         return this.profilesService.launchProfile(profile)
+    }
+
+    private findOpenTabForProfile (profile: PartialProfile<Profile>): { top: BaseTabComponent, tab: BaseTabComponent }|null {
+        for (const top of this.app.tabs) {
+            const leaves = top instanceof SplitTabComponent ? top.getAllTabs() : [top]
+            for (const tab of leaves) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+                const tabProfileID = (tab as any).profile?.id
+                if (tabProfileID && tabProfileID === profile.id) {
+                    return { top, tab }
+                }
+            }
+        }
+        return null
+    }
+
+    private async refreshProfileStatus (): Promise<void> {
+        const next: Record<string, ProfileStatus|undefined> = {}
+        const profiles = this.profileGroups.flatMap(g => g.profiles ?? [])
+        await Promise.all(profiles.map(async profile => {
+            if (!profile.id) {
+                return
+            }
+            const provider = this.profilesService.providerForProfile(profile)
+            const status = await provider?.getProfileStatus(profile).catch(() => null)
+            if (status) {
+                next[profile.id] = status
+            }
+        }))
+        this.profileStatus = next
     }
 
     async onFilterChange (): Promise<void> {
