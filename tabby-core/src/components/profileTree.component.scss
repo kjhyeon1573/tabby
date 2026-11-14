@@ -78,7 +78,7 @@ input {
                 white-space: nowrap;
             }
 
-            .detail-prefix {
+            .detail-prefix, .detail-suffix {
                 display: none;
             }
 
@@ -104,7 +104,7 @@ input {
                 flex: none;
                 width: calc(100% - 2rem); // leave room for the hover actions on the right
 
-                .detail-prefix {
+                .detail-prefix, .detail-suffix {
                     display: inline;
                 }
             }

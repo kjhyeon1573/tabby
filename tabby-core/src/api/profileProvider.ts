@@ -63,8 +63,10 @@ export interface ProfileSettingsComponent<P extends Profile, PP extends ProfileP
 export interface ProfileStatus {
     active: boolean
     description?: string
-    /** Short secondary text shown next to the profile name, e.g. the session's current directory */
+    /** Secondary text shown under the profile name while hovered, e.g. the session's current directory or ssh command */
     detail?: string
+    /** Compact form of `detail` shown beside the name when idle (defaults to the last path segment of `detail`) */
+    detailShort?: string
 }
 
 export abstract class ProfileProvider<P extends Profile> {
