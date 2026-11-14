@@ -1246,10 +1246,14 @@ msgid "Cursor trail start threshold"
 msgstr ""
 
 msgid "Minimum cursor jump (in cells) that starts a trail"
+msgstr ""
+
 msgid "Vibrancy background opacity"
 msgstr ""
 
 msgid "How strongly the color scheme background tints the blurred window (like kitty's background_opacity)"
+msgstr ""
+
 msgid "Side tab bar width"
 msgstr ""
 

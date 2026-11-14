@@ -2590,11 +2590,13 @@ msgstr "커서 트레일 시작 임계값"
 
 msgid "Minimum cursor jump (in cells) that starts a trail"
 msgstr "트레일을 시작하는 최소 커서 이동 거리(셀 단위)입니다"
+
 msgid "Vibrancy background opacity"
 msgstr "생동감 배경 불투명도"
 
 msgid "How strongly the color scheme background tints the blurred window (like kitty's background_opacity)"
 msgstr "블러 처리된 창 위에 색 테마 배경을 얼마나 진하게 깔지 정합니다 (kitty의 background_opacity와 같은 역할)"
+
 msgid "Side tab bar width"
 msgstr "세로 탭 바 너비"
 
