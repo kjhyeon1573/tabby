@@ -28,15 +28,29 @@
 
                 ng-container(*ngIf='!group.collapsed')
                     ng-container(*ngFor='let profile of group.profiles')
-                        a.tree-item(
+                        a.tree-item.profile-item(
                             (dblclick)='launchProfile(profile)',
                             [style.paddingLeft.px]='(depth + 1) * 20',
                             (contextmenu)='profileContextMenu(profile, $event)',
+                            (mouseenter)='onProfileRowEnter($event)',
+                            (mouseleave)='onProfileRowLeave($event)',
                             href='#'
                         )
                             .fw-20
-                                profile-icon.ms-1([icon]='profile.icon', [color]='profile.color')
-                            span.ms-2.no-wrap {{ profile.name }}
+                                profile-icon.ms-1(
+                                    [icon]='profile.icon',
+                                    [color]='profileStatus[profile.id]?.active ? activeProfileColor : profile.color',
+                                    [attr.title]='profileStatus[profile.id]?.description'
+                                )
+                            .profile-label.ms-2
+                                span.no-wrap {{ profile.name }}
+                                span.profile-detail(
+                                    *ngIf='profileStatus[profile.id]?.detail as detail',
+                                    [attr.title]='detail'
+                                )
+                                    span.detail-track
+                                        span.detail-prefix {{ splitDetail(detail)[0] }}
+                                        span.detail-base {{ splitDetail(detail)[1] }}
 
                             .actions
                                 .action((click)='launchProfile(profile)')

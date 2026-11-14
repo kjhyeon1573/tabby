@@ -45,10 +45,96 @@ input {
             }
         }
 
+        &.profile-item {
+            align-items: flex-start;
+        }
+
+        // name + path. Idle: one row with the last path segment beside the name.
+        // Hovered (.hovered, toggled from onProfileRowEnter): a column, the full path on a second
+        // line; the move itself is animated with a FLIP transform plus a kitty-style trail quad.
+        .profile-label {
+            flex: 1 1 auto;
+            min-width: 0;
+            display: flex;
+            flex-direction: row;
+            align-items: baseline;
+            position: relative;
+            z-index: 1;
+        }
+
+        .profile-detail {
+            margin-left: .5rem;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: .8em;
+            line-height: 1.35em;
+            opacity: .55;
+            will-change: transform;
+
+            .detail-track {
+                display: inline-block;
+                white-space: nowrap;
+            }
+
+            .detail-prefix {
+                display: none;
+            }
+
+            // set from startMarquee() when the full path does not fit: ease to the end,
+            // pause, glide back to the start and repeat
+            &.marquee {
+                text-overflow: clip;
+
+                .detail-track {
+                    animation: profile-detail-marquee var(--marquee-duration, 6s) infinite;
+                }
+            }
+        }
+
+        &.hovered {
+            .profile-label {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .profile-detail {
+                margin-left: 0;
+                flex: none;
+                width: calc(100% - 2rem); // leave room for the hover actions on the right
+
+                .detail-prefix {
+                    display: inline;
+                }
+            }
+        }
+
+        // keep the hover action buttons on the first line while the row is two lines tall
+        &.hovered .actions {
+            height: auto;
+            top: 0;
+
+            .action {
+                height: calc(var(--bs-body-font-size) * var(--bs-body-line-height));
+            }
+        }
+
+        // the stretching quad that follows the path from its old slot to the new one
+        .detail-trail {
+            position: absolute;
+            inset: 0;
+            display: none;
+            pointer-events: none;
+            z-index: 0;
+            background: color-mix(in srgb, var(--bs-blue) 38%, transparent);
+        }
+
         .actions {
             display: none;
             position: absolute;
             right: 0;
+            z-index: 2; // above .profile-label, which spans the row while hovered
             flex-direction: row;
             gap: calc(.25rem * calc(var(--spaciness) * var(--spaciness)));
             height: 100%;
@@ -72,6 +158,12 @@ input {
     }
 }
 
+
+@keyframes profile-detail-marquee {
+    // hold, scroll left at constant speed, hold, then snap back to the start on loop
+    0%, 12% { transform: translateX(0); animation-timing-function: linear; }
+    88%, 100% { transform: translateX(var(--marquee-distance, 0px)); }
+}
 
 :host(.mac-inset) {
     padding-top: var(--tabs-height);
