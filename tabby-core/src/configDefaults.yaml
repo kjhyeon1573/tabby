@@ -17,6 +17,7 @@ appearance:
   opacity: 1.0
   vibrancy: false
   vibrancyType: 'blur'
+  vibrancyBackgroundOpacity: 0.4
   lastTabClosesWindow: false
   spaciness: 1
   colorSchemeMode: 'dark'

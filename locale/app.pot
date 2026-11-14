@@ -1229,3 +1229,27 @@ msgstr ""
 #: tabby-terminal/src/hotkeys.ts:58
 msgid "Zoom out"
 msgstr ""
+
+msgid "Cursor trail"
+msgstr ""
+
+msgid "Animate a trail that follows the cursor when it jumps, like kitty's cursor_trail"
+msgstr ""
+
+msgid "Cursor trail decay"
+msgstr ""
+
+msgid "Fast and slow decay times in seconds; smaller values make the trail snappier"
+msgstr ""
+
+msgid "Cursor trail start threshold"
+msgstr ""
+
+msgid "Minimum cursor jump (in cells) that starts a trail"
+msgstr ""
+
+msgid "Vibrancy background opacity"
+msgstr ""
+
+msgid "How strongly the color scheme background tints the blurred window (like kitty's background_opacity)"
+msgstr ""

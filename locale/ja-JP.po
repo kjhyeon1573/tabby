@@ -2572,3 +2572,27 @@ msgctxt "[Dynamic] port forwarding"
 msgid "id.port-forwarding.dynamic"
 msgstr "ダイナミック"
 
+
+msgid "Cursor trail"
+msgstr "カーソルトレイル"
+
+msgid "Animate a trail that follows the cursor when it jumps, like kitty's cursor_trail"
+msgstr "kitty の cursor_trail のように、カーソル移動時に追従する軌跡アニメーションを表示します"
+
+msgid "Cursor trail decay"
+msgstr "カーソルトレイルの減衰時間"
+
+msgid "Fast and slow decay times in seconds; smaller values make the trail snappier"
+msgstr "速い側と遅い側の減衰時間（秒）です。値が小さいほど軌跡が素早く消えます"
+
+msgid "Cursor trail start threshold"
+msgstr "カーソルトレイル開始しきい値"
+
+msgid "Minimum cursor jump (in cells) that starts a trail"
+msgstr "軌跡を開始する最小のカーソル移動距離（セル単位）です"
+
+msgid "Vibrancy background opacity"
+msgstr "ビブランシー背景の不透明度"
+
+msgid "How strongly the color scheme background tints the blurred window (like kitty's background_opacity)"
+msgstr "ぼかした背景の上にカラースキームの背景色をどの程度重ねるかを指定します (kitty の background_opacity に相当)"

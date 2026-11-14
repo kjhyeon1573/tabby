@@ -67,7 +67,10 @@ export class ThemesService {
 
         let background = Color(theme.background)
         if (this.getConfigStoreOrDefaults().appearance.vibrancy) {
-            background = background.fade(0.6)
+            // How much of the color scheme background shows over the OS blur (kitty: background_opacity)
+            const bgOpacity = Number(this.getConfigStoreOrDefaults().appearance.vibrancyBackgroundOpacity)
+            const alpha = Number.isFinite(bgOpacity) ? Math.min(1, Math.max(0, bgOpacity)) : 0.4
+            background = background.fade(1 - alpha)
         }
         // const background = theme.background
         const backgroundMore = more(background.string(), 0.25).string()

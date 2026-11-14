@@ -19,6 +19,7 @@ import { BaseTerminalProfile } from '../api/interfaces'
 import { getXtermBackgroundColor } from '../helpers'
 import { generatePalette } from '../generatePalette'
 import { disposeWebglAddon } from './webglAddon'
+import { CursorTrail } from './cursorTrail'
 import './xterm.css'
 
 const COLOR_NAMES = [
@@ -108,6 +109,7 @@ export class XTermFrontend extends Frontend {
     private serializeAddon = new SerializeAddon()
     private ligaturesAddon?: LigaturesAddon
     private webGLAddon?: WebglAddon
+    private cursorTrail: CursorTrail
     private opened = false
     private resizeObserver?: any
     private hostEventHandlers?: {
@@ -160,6 +162,7 @@ export class XTermFrontend extends Frontend {
         })
         this.flowControl = new FlowControl(this.xterm)
         this.xtermCore = this.xterm['_core']
+        this.cursorTrail = new CursorTrail(this.xterm, this.xtermCore)
 
         // xterm.js#6054 does this in _keyDown itself. Keep the workaround at
         // that boundary so Shift cannot overwrite a previous keydown's state.
@@ -420,6 +423,9 @@ export class XTermFrontend extends Frontend {
             })
         }
 
+        this.cursorTrail.attach()
+        this.applyCursorTrailConfig()
+
         // Allow an animation frame
         await new Promise(r => setTimeout(r, 100))
         if (!this.isAttachActive()) {
@@ -551,6 +557,7 @@ export class XTermFrontend extends Frontend {
             this.detach(this.element)
         }
         super.destroy()
+        this.cursorTrail.dispose()
         disposeWebglAddon(this.webGLAddon)
         this.xterm.dispose()
     }
@@ -701,6 +708,18 @@ export class XTermFrontend extends Frontend {
             this.xterm.options.theme = theme
             this.configuredTheme = theme
         }
+        this.cursorTrail.setColor(scheme.cursor || scheme.foreground)
+    }
+
+    private applyCursorTrailConfig (): void {
+        const terminal = this.configService.store.terminal
+        this.cursorTrail.setOptions({
+            enabled: !!terminal.cursorTrail,
+            decayFast: Number(terminal.cursorTrailDecayFast) || 0.1,
+            decaySlow: Number(terminal.cursorTrailDecaySlow) || 0.4,
+            thresholdX: Math.max(0, Number(terminal.cursorTrailThreshold) || 0),
+            thresholdY: Math.max(0, Number(terminal.cursorTrailThreshold) || 0),
+        })
     }
 
     configure (profile: BaseTerminalProfile): void {
@@ -730,6 +749,7 @@ export class XTermFrontend extends Frontend {
             beam: 'bar',
         }[config.terminal.cursor] || config.terminal.cursor
         this.xterm.options.cursorBlink = config.terminal.cursorBlink
+        this.applyCursorTrailConfig()
         this.xterm.options.macOptionIsMeta = config.terminal.altIsMeta
         this.xterm.options.scrollback = config.terminal.scrollbackLines
         this.xterm.options.wordSeparator = config.terminal.wordSeparator
