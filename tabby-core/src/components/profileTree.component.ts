@@ -59,8 +59,13 @@ export class ProfileTreeComponent extends BaseComponent {
     async ngOnInit (): Promise<void> {
         await this.loadTreeItems()
         this.subscribeUntilDestroyed(this.config.changed$, () => this.loadTreeItems())
-        this.subscribeUntilDestroyed(this.app.tabsChanged$, () => this.refreshProfileStatus())
-        this.statusTimer = setInterval(() => this.refreshProfileStatus(), 3000)
+        // tmux creates/destroys its session slightly after the tab appears/disappears, so re-check a few times
+        this.subscribeUntilDestroyed(this.app.tabsChanged$, () => {
+            for (const delay of [0, 500, 1500]) {
+                setTimeout(() => this.refreshProfileStatus(), delay)
+            }
+        })
+        this.statusTimer = setInterval(() => this.refreshProfileStatus(), 1000)
         this.app.tabsChanged$.subscribe(() => this.tabStateChanged())
         this.app.activeTabChange$.subscribe(() => this.tabStateChanged())
     }

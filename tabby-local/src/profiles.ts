@@ -83,7 +83,7 @@ export class LocalProfilesService extends ProfileProvider<LocalProfile> {
 
     private listTmuxSessions (command: string): Promise<Set<string>> {
         const now = Date.now()
-        if (!this.tmuxSessionsCache || this.tmuxSessionsCache.command !== command || now - this.tmuxSessionsCache.at > 2000) {
+        if (!this.tmuxSessionsCache || this.tmuxSessionsCache.command !== command || now - this.tmuxSessionsCache.at > 300) {
             this.tmuxSessionsCache = {
                 at: now,
                 command,
