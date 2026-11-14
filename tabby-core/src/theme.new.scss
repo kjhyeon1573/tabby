@@ -9,6 +9,36 @@ app-root {
     }
 
     .main.content {
+        // Vertical tab bar: the active tab gets a visibly lighter pill plus an accent bar on the edge,
+        // instead of only a brighter label.
+        &.tabs-on-left > .tab-bar > .tabs > tab-header,
+        &.tabs-on-right > .tab-bar > .tabs > tab-header {
+            border-radius: 6px;
+            margin: 1px 4px;
+            width: calc(100% - 8px) !important;
+            transition: 0.15s background;
+
+            &:hover:not(.active) {
+                background: color-mix(in srgb, var(--theme-fg) 7%, transparent);
+            }
+
+            &.active {
+                background: color-mix(in srgb, var(--theme-fg) 16%, var(--body-bg));
+                color: var(--theme-fg);
+            }
+
+            .current-tab-indicator {
+                top: 7px;
+                bottom: 7px;
+                left: 0;
+                right: auto;
+                width: 3px;
+                height: auto;
+                border-radius: 0 3px 3px 0;
+                background: var(--bs-blue);
+            }
+        }
+
         .tab-bar {
             background: var(--theme-bg-more-2);
 
