@@ -45,53 +45,44 @@ input {
             }
         }
 
-        // name row (+ last path segment) and a drop-down line with the full path that
-        // slides in while the row is hovered
+        &.profile-item {
+            align-items: flex-start;
+        }
+
+        // name + path. Idle: one row with the last path segment beside the name.
+        // Hovered (.hovered, toggled from onProfileRowEnter): a column, the full path on a second
+        // line; the move itself is animated with a FLIP transform plus a kitty-style trail quad.
         .profile-label {
             flex: 1 1 auto;
             min-width: 0;
             display: flex;
-            flex-direction: column;
-        }
-
-        .profile-name-row {
-            display: flex;
+            flex-direction: row;
             align-items: baseline;
-            min-width: 0;
+            position: relative;
+            z-index: 1;
         }
 
-        .profile-detail-inline {
+        .profile-detail {
             margin-left: .5rem;
             min-width: 0;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
             font-size: .8em;
-            opacity: .55;
-            transition: opacity .16s ease-out, transform .2s cubic-bezier(.2, .8, .2, 1);
-        }
-
-        .profile-detail {
-            width: calc(100% - 2rem); // leave room for the hover actions on the right
-            max-height: 0;
-            opacity: 0;
-            transform: translateY(-.35em);
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            font-size: .8em;
             line-height: 1.35em;
-            transition:
-                max-height .22s cubic-bezier(.2, .8, .2, 1),
-                transform .26s cubic-bezier(.2, .8, .2, 1),
-                opacity .16s ease-out .05s;
+            opacity: .55;
+            will-change: transform;
 
             .detail-track {
                 display: inline-block;
                 white-space: nowrap;
             }
 
-            // set from onProfileRowEnter() when the full path does not fit: ease to the end,
+            .detail-prefix {
+                display: none;
+            }
+
+            // set from startMarquee() when the full path does not fit: ease to the end,
             // pause, glide back to the start and repeat
             &.marquee {
                 text-overflow: clip;
@@ -102,17 +93,31 @@ input {
             }
         }
 
-        &:hover {
-            .profile-detail-inline {
-                opacity: 0;
-                transform: translateX(.4em);
+        &.hovered {
+            .profile-label {
+                flex-direction: column;
+                align-items: flex-start;
             }
 
             .profile-detail {
-                max-height: 1.4em;
-                opacity: .6;
-                transform: translateY(0);
+                margin-left: 0;
+                flex: none;
+                width: calc(100% - 2rem); // leave room for the hover actions on the right
+
+                .detail-prefix {
+                    display: inline;
+                }
             }
+        }
+
+        // the stretching quad that follows the path from its old slot to the new one
+        .detail-trail {
+            position: absolute;
+            inset: 0;
+            display: none;
+            pointer-events: none;
+            z-index: 0;
+            background: color-mix(in srgb, var(--bs-blue) 38%, transparent);
         }
 
         .actions {
