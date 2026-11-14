@@ -9,6 +9,7 @@ appearance:
   dockAlwaysOnTop: true
   flexTabs: false
   tabsLocation: top
+  sideTabWidth: 200
   tabsInFullscreen: false
   cycleTabs: true
   theme: Follow the color scheme

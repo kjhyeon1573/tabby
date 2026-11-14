@@ -2572,3 +2572,9 @@ msgctxt "[Dynamic] port forwarding"
 msgid "id.port-forwarding.dynamic"
 msgstr "동적"
 
+
+msgid "Side tab bar width"
+msgstr "세로 탭 바 너비"
+
+msgid "You can also drag the inner edge of the tab bar; double-click it to reset"
+msgstr "탭 바 안쪽 가장자리를 드래그해도 조절되며, 더블클릭하면 기본값으로 돌아갑니다"

@@ -317,6 +317,19 @@ h3.mt-4(translate) Tabs
         label.btn.btn-secondary(for='tabsLocationRight')
             span(translate) Right
 
+.form-line(*ngIf='config.store.appearance.tabsLocation == "left" || config.store.appearance.tabsLocation == "right"')
+    .header
+        .title(translate) Side tab bar width
+        .description(translate) You can also drag the inner edge of the tab bar; double-click it to reset
+    input(
+        type='range',
+        [(ngModel)]='config.store.appearance.sideTabWidth',
+        (ngModelChange)='saveConfiguration()',
+        min='80',
+        max='600',
+        step='10'
+    )
+
 .form-line
     .header
         .title(translate) Tabs width
