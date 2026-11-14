@@ -59,6 +59,14 @@ export interface ProfileSettingsComponent<P extends Profile, PP extends ProfileP
     save?: () => void
 }
 
+/** Live state of a profile shown in the profile sidebar (e.g. whether its tmux session exists) */
+export interface ProfileStatus {
+    active: boolean
+    description?: string
+    /** Short secondary text shown next to the profile name, e.g. the session's current directory */
+    detail?: string
+}
+
 export abstract class ProfileProvider<P extends Profile> {
     id: string
     name: string
@@ -74,6 +82,15 @@ export abstract class ProfileProvider<P extends Profile> {
     }
 
     abstract getDescription (profile: PartialProfile<P>): string
+
+    /**
+     * Optional live status for the profile sidebar.
+     * Return null when the profile has no notion of a persistent state.
+     */
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    async getProfileStatus (_profile: PartialProfile<P>): Promise<ProfileStatus|null> {
+        return null
+    }
 
     deleteProfile (profile: P): void { }
 }
