@@ -62,6 +62,10 @@ input {
             z-index: 1;
         }
 
+        .profile-name {
+            flex: none; // min-width is set per group from alignDetailColumns()
+        }
+
         .profile-detail {
             margin-left: .5rem;
             min-width: 0;

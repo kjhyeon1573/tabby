@@ -1,4 +1,4 @@
-import { Component, HostBinding, HostListener, Input } from '@angular/core'
+import { AfterViewChecked, Component, ElementRef, HostBinding, HostListener, Input } from '@angular/core'
 import { TranslateService } from '@ngx-translate/core'
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap'
 import deepClone from 'clone-deep'
@@ -25,7 +25,7 @@ interface CollapsableProfileGroup extends ProfileGroup {
     styleUrls: ['./profileTree.component.scss'],
     templateUrl: './profileTree.component.pug',
 })
-export class ProfileTreeComponent extends BaseComponent {
+export class ProfileTreeComponent extends BaseComponent implements AfterViewChecked {
     profileGroups: PartialProfileGroup<ProfileGroup>[] = []
     rootGroups: PartialProfileGroup<ProfileGroup>[] = []
 
@@ -36,6 +36,7 @@ export class ProfileTreeComponent extends BaseComponent {
     profileStatus: Record<string, ProfileStatus|undefined> = {}
     activeProfileColor = 'var(--bs-green)'
     private statusTimer: ReturnType<typeof setInterval>|null = null
+    private alignedNamesSignature = ''
 
 
     panelMinWidth = 200
@@ -46,6 +47,7 @@ export class ProfileTreeComponent extends BaseComponent {
     panelStartX = 0
 
     constructor (
+        private element: ElementRef<HTMLElement>,
         private app: AppService,
         private platform: PlatformService,
         private config: ConfigService,
@@ -208,6 +210,44 @@ export class ProfileTreeComponent extends BaseComponent {
 
     private async tabStateChanged (): Promise<void> {
         // TODO: show active tab in the side panel with eye icon
+    }
+
+    ngAfterViewChecked (): void {
+        this.alignDetailColumns()
+    }
+
+    /**
+     * Gives every profile name in a group the width of the group's longest name, so the
+     * path / host labels beside them line up in a column.
+     */
+    private alignDetailColumns (): void {
+        const rows = Array.from(this.element.nativeElement.querySelectorAll<HTMLElement>('.tree-item'))
+        const signature = rows.map(row => row.classList.contains('profile-item') ? row.querySelector('.profile-name')?.textContent ?? '' : '|').join('\n')
+        if (signature === this.alignedNamesSignature) {
+            return
+        }
+        this.alignedNamesSignature = signature
+
+        let run: HTMLElement[] = []
+        const flush = () => {
+            for (const name of run) {
+                name.style.minWidth = ''
+            }
+            const widest = Math.max(0, ...run.map(name => name.getBoundingClientRect().width))
+            for (const name of run) {
+                name.style.minWidth = `${Math.ceil(widest)}px`
+            }
+            run = []
+        }
+        for (const row of rows) {
+            const name = row.classList.contains('profile-item') ? row.querySelector<HTMLElement>('.profile-name') : null
+            if (name) {
+                run.push(name)
+            } else {
+                flush()
+            }
+        }
+        flush()
     }
 
     ngOnDestroy (): void {
