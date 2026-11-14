@@ -134,6 +134,7 @@ input {
             display: none;
             position: absolute;
             right: 0;
+            z-index: 2; // above .profile-label, which spans the row while hovered
             flex-direction: row;
             gap: calc(.25rem * calc(var(--spaciness) * var(--spaciness)));
             height: 100%;
