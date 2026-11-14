@@ -110,6 +110,16 @@ input {
             }
         }
 
+        // keep the hover action buttons on the first line while the row is two lines tall
+        &.hovered .actions {
+            height: auto;
+            top: 0;
+
+            .action {
+                height: calc(var(--bs-body-font-size) * var(--bs-body-line-height));
+            }
+        }
+
         // the stretching quad that follows the path from its old slot to the new one
         .detail-trail {
             position: absolute;
@@ -149,11 +159,9 @@ input {
 
 
 @keyframes profile-detail-marquee {
-    0% { transform: translateX(0); }
-    14% { transform: translateX(0); animation-timing-function: linear; }
-    78% { transform: translateX(var(--marquee-distance, 0px)); }
-    88% { transform: translateX(var(--marquee-distance, 0px)); animation-timing-function: cubic-bezier(.2, .9, .25, 1); }
-    100% { transform: translateX(0); }
+    // hold, scroll left at constant speed, hold, then snap back to the start on loop
+    0%, 12% { transform: translateX(0); animation-timing-function: linear; }
+    88%, 100% { transform: translateX(var(--marquee-distance, 0px)); }
 }
 
 :host(.mac-inset) {
