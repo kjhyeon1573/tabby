@@ -1253,3 +1253,9 @@ msgstr ""
 
 msgid "How strongly the color scheme background tints the blurred window (like kitty's background_opacity)"
 msgstr ""
+
+msgid "Side tab bar width"
+msgstr ""
+
+msgid "You can also drag the inner edge of the tab bar; double-click it to reset"
+msgstr ""
