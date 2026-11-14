@@ -41,6 +41,10 @@
                                     [attr.title]='profileStatus[profile.id]?.description'
                                 )
                             span.ms-2.no-wrap {{ profile.name }}
+                            span.ms-2.profile-detail(
+                                *ngIf='profileStatus[profile.id]?.detail',
+                                [attr.title]='profileStatus[profile.id]?.detail'
+                            ) {{ profileStatus[profile.id]?.detail }}
 
                             .actions
                                 .action((click)='launchProfile(profile)')

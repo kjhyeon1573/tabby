@@ -63,6 +63,8 @@ export interface ProfileSettingsComponent<P extends Profile, PP extends ProfileP
 export interface ProfileStatus {
     active: boolean
     description?: string
+    /** Short secondary text shown next to the profile name, e.g. the session's current directory */
+    detail?: string
 }
 
 export abstract class ProfileProvider<P extends Profile> {

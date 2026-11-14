@@ -51,7 +51,7 @@ export class LocalProfilesService extends ProfileProvider<LocalProfile> {
         }))
     }
 
-    private tmuxSessionsCache: { at: number, command: string, sessions: Promise<Set<string>> }|null = null
+    private tmuxSessionsCache: { at: number, command: string, sessions: Promise<Map<string, string>> }|null = null
 
     /** For profiles that run `tmux new-session -s NAME` / `tmux attach -t NAME`: reports whether NAME exists */
     async getProfileStatus (profile: PartialProfile<LocalProfile>): Promise<ProfileStatus|null> {
@@ -61,9 +61,11 @@ export class LocalProfilesService extends ProfileProvider<LocalProfile> {
         }
         const sessions = await this.listTmuxSessions(profile.options?.command ?? 'tmux')
         const active = sessions.has(session)
+        const cwd = sessions.get(session)
         return {
             active,
-            description: active ? `tmux session "${session}" is running` : `tmux session "${session}" is not running`,
+            description: active ? `tmux session "${session}" is running${cwd ? ` in ${cwd}` : ''}` : `tmux session "${session}" is not running`,
+            detail: cwd ? this.abbreviateHome(cwd) : undefined,
         }
     }
 
@@ -81,15 +83,29 @@ export class LocalProfilesService extends ProfileProvider<LocalProfile> {
         return null
     }
 
-    private listTmuxSessions (command: string): Promise<Set<string>> {
+    private abbreviateHome (dir: string): string {
+        const home = process.env.HOME
+        if (home && (dir === home || dir.startsWith(home + '/'))) {
+            return '~' + dir.slice(home.length)
+        }
+        return dir
+    }
+
+    /** session name -> current path of the session's active pane */
+    private listTmuxSessions (command: string): Promise<Map<string, string>> {
         const now = Date.now()
         if (!this.tmuxSessionsCache || this.tmuxSessionsCache.command !== command || now - this.tmuxSessionsCache.at > 300) {
             this.tmuxSessionsCache = {
                 at: now,
                 command,
-                sessions: execFile(command, ['list-sessions', '-F', '#S'])
-                    .then(([stdout]) => new Set(stdout.toString().split('\n').filter(x => x)))
-                    .catch(() => new Set<string>()),
+                sessions: execFile(command, ['list-sessions', '-F', '#S\t#{pane_current_path}'])
+                    .then(([stdout]) => new Map(
+                        stdout.toString().split('\n').filter(x => x).map(line => {
+                            const [name, ...rest] = line.split('\t')
+                            return [name, rest.join('\t')] as [string, string]
+                        }),
+                    ))
+                    .catch(() => new Map<string, string>()),
             }
         }
         return this.tmuxSessionsCache.sessions

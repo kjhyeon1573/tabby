@@ -45,6 +45,16 @@ input {
             }
         }
 
+        .profile-detail {
+            flex: 1 1 auto;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: .8em;
+            opacity: .55;
+        }
+
         .actions {
             display: none;
             position: absolute;
