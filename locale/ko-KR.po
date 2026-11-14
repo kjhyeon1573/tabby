@@ -2572,3 +2572,9 @@ msgctxt "[Dynamic] port forwarding"
 msgid "id.port-forwarding.dynamic"
 msgstr "동적"
 
+
+msgid "Vibrancy background opacity"
+msgstr "생동감 배경 불투명도"
+
+msgid "How strongly the color scheme background tints the blurred window (like kitty's background_opacity)"
+msgstr "블러 처리된 창 위에 색 테마 배경을 얼마나 진하게 깔지 정합니다 (kitty의 background_opacity와 같은 역할)"

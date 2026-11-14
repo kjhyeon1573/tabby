@@ -1229,3 +1229,9 @@ msgstr ""
 #: tabby-terminal/src/hotkeys.ts:58
 msgid "Zoom out"
 msgstr ""
+
+msgid "Vibrancy background opacity"
+msgstr ""
+
+msgid "How strongly the color scheme background tints the blurred window (like kitty's background_opacity)"
+msgstr ""

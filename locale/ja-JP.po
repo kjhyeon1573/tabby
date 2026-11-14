@@ -2572,3 +2572,9 @@ msgctxt "[Dynamic] port forwarding"
 msgid "id.port-forwarding.dynamic"
 msgstr "ダイナミック"
 
+
+msgid "Vibrancy background opacity"
+msgstr "ビブランシー背景の不透明度"
+
+msgid "How strongly the color scheme background tints the blurred window (like kitty's background_opacity)"
+msgstr "ぼかした背景の上にカラースキームの背景色をどの程度重ねるかを指定します (kitty の background_opacity に相当)"
