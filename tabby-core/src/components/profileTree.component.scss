@@ -53,6 +53,22 @@ input {
             white-space: nowrap;
             font-size: .8em;
             opacity: .55;
+
+            .detail-prefix, .detail-base {
+                display: inline-block;
+                vertical-align: bottom;
+            }
+
+            // parent path is collapsed until the row is hovered, then unfolds to the left of the last segment
+            .detail-prefix {
+                max-width: 0;
+                overflow: hidden;
+                transition: max-width .25s ease-out;
+            }
+        }
+
+        &:hover .profile-detail .detail-prefix {
+            max-width: 40rem;
         }
 
         .actions {

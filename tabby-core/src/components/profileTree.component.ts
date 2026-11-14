@@ -233,6 +233,15 @@ export class ProfileTreeComponent extends BaseComponent {
         return this.profilesService.launchProfile(profile)
     }
 
+    /** '~/a/b/c' -> ['~/a/b/', 'c']: the sidebar shows only the last segment until hovered */
+    splitDetail (detail: string): [string, string] {
+        const idx = detail.lastIndexOf('/')
+        if (idx < 0 || idx === detail.length - 1) {
+            return ['', detail]
+        }
+        return [detail.slice(0, idx + 1), detail.slice(idx + 1)]
+    }
+
     private findOpenTabForProfile (profile: PartialProfile<Profile>): { top: BaseTabComponent, tab: BaseTabComponent }|null {
         for (const top of this.app.tabs) {
             const leaves = top instanceof SplitTabComponent ? top.getAllTabs() : [top]

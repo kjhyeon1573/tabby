@@ -42,9 +42,11 @@
                                 )
                             span.ms-2.no-wrap {{ profile.name }}
                             span.ms-2.profile-detail(
-                                *ngIf='profileStatus[profile.id]?.detail',
-                                [attr.title]='profileStatus[profile.id]?.detail'
-                            ) {{ profileStatus[profile.id]?.detail }}
+                                *ngIf='profileStatus[profile.id]?.detail as detail',
+                                [attr.title]='detail'
+                            )
+                                span.detail-prefix {{ splitDetail(detail)[0] }}
+                                span.detail-base {{ splitDetail(detail)[1] }}
 
                             .actions
                                 .action((click)='launchProfile(profile)')
