@@ -2572,3 +2572,21 @@ msgctxt "[Dynamic] port forwarding"
 msgid "id.port-forwarding.dynamic"
 msgstr "동적"
 
+
+msgid "Cursor trail"
+msgstr "커서 트레일"
+
+msgid "Animate a trail that follows the cursor when it jumps, like kitty's cursor_trail"
+msgstr "kitty의 cursor_trail처럼 커서가 이동할 때 따라가는 잔상 애니메이션을 표시합니다"
+
+msgid "Cursor trail decay"
+msgstr "커서 트레일 감쇠 시간"
+
+msgid "Fast and slow decay times in seconds; smaller values make the trail snappier"
+msgstr "빠른 쪽과 느린 쪽의 감쇠 시간(초)입니다. 값이 작을수록 트레일이 빠르게 사라집니다"
+
+msgid "Cursor trail start threshold"
+msgstr "커서 트레일 시작 임계값"
+
+msgid "Minimum cursor jump (in cells) that starts a trail"
+msgstr "트레일을 시작하는 최소 커서 이동 거리(셀 단위)입니다"
