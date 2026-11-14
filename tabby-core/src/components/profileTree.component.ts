@@ -382,13 +382,26 @@ export class ProfileTreeComponent extends BaseComponent {
         detail.style.removeProperty('--marquee-duration')
     }
 
-    /** '~/a/b/c' -> ['~/a/b/', 'c']: the sidebar shows only the last segment until hovered */
-    splitDetail (detail: string): [string, string] {
-        const idx = detail.lastIndexOf('/')
-        if (idx < 0 || idx === detail.length - 1) {
-            return ['', detail]
+    /**
+     * [prefix, short, suffix] for a profile's detail text: only `short` is shown while idle
+     * (status.detailShort, or the last path segment), the whole string while hovered.
+     */
+    detailParts (profileID: string|undefined): [string, string, string]|null {
+        const status = profileID ? this.profileStatus[profileID] : undefined
+        const detail = status?.detail
+        if (!detail) {
+            return null
         }
-        return [detail.slice(0, idx + 1), detail.slice(idx + 1)]
+        let short = status.detailShort
+        if (short === undefined) {
+            const idx = detail.lastIndexOf('/')
+            short = idx < 0 || idx === detail.length - 1 ? detail : detail.slice(idx + 1)
+        }
+        const at = detail.indexOf(short)
+        if (!short || at < 0) {
+            return ['', detail, '']
+        }
+        return [detail.slice(0, at), short, detail.slice(at + short.length)]
     }
 
     private findOpenTabForProfile (profile: PartialProfile<Profile>): { top: BaseTabComponent, tab: BaseTabComponent }|null {

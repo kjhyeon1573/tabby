@@ -8,6 +8,20 @@ import { TerminalTabComponent } from './components/terminalTab.component'
 import { LocalProfileSettingsComponent } from './components/localProfileSettings.component'
 import { ShellProvider, Shell, SessionOptions, LocalProfile } from './api'
 
+interface TmuxSessionInfo {
+    cwd: string
+    currentCommand: string
+    shellPID: number
+    sshDestination?: string
+    sshCommandLine?: string
+}
+
+interface ProcessInfo {
+    pid: number
+    ppid: number
+    args: string
+}
+
 @Injectable({ providedIn: 'root' })
 export class LocalProfilesService extends ProfileProvider<LocalProfile> {
     id = 'local'
@@ -51,7 +65,7 @@ export class LocalProfilesService extends ProfileProvider<LocalProfile> {
         }))
     }
 
-    private tmuxSessionsCache: { at: number, command: string, sessions: Promise<Map<string, string>> }|null = null
+    private tmuxSessionsCache: { at: number, command: string, sessions: Promise<Map<string, TmuxSessionInfo>> }|null = null
 
     /** For profiles that run `tmux new-session -s NAME` / `tmux attach -t NAME`: reports whether NAME exists */
     async getProfileStatus (profile: PartialProfile<LocalProfile>): Promise<ProfileStatus|null> {
@@ -60,12 +74,23 @@ export class LocalProfilesService extends ProfileProvider<LocalProfile> {
             return null
         }
         const sessions = await this.listTmuxSessions(profile.options?.command ?? 'tmux')
-        const active = sessions.has(session)
-        const cwd = sessions.get(session)
+        const info = sessions.get(session)
+        if (!info) {
+            return { active: false, description: `tmux session "${session}" is not running` }
+        }
+        if (info.sshDestination) {
+            const host = info.sshDestination.replace(/^.*@/, '').replace(/:\d+$/, '')
+            return {
+                active: true,
+                description: `tmux session "${session}" is connected to ${info.sshDestination} over ssh: ${info.sshCommandLine}`,
+                detail: info.sshCommandLine ?? `ssh ${info.sshDestination}`,
+                detailShort: host,
+            }
+        }
         return {
-            active,
-            description: active ? `tmux session "${session}" is running${cwd ? ` in ${cwd}` : ''}` : `tmux session "${session}" is not running`,
-            detail: cwd ? this.abbreviateHome(cwd) : undefined,
+            active: true,
+            description: `tmux session "${session}" is running${info.cwd ? ` in ${info.cwd}` : ''}`,
+            detail: info.cwd ? this.abbreviateHome(info.cwd) : undefined,
         }
     }
 
@@ -91,24 +116,96 @@ export class LocalProfilesService extends ProfileProvider<LocalProfile> {
         return dir
     }
 
-    /** session name -> current path of the session's active pane */
-    private listTmuxSessions (command: string): Promise<Map<string, string>> {
+    /** session name -> state of the session's active pane */
+    private listTmuxSessions (command: string): Promise<Map<string, TmuxSessionInfo>> {
         const now = Date.now()
         if (!this.tmuxSessionsCache || this.tmuxSessionsCache.command !== command || now - this.tmuxSessionsCache.at > 300) {
             this.tmuxSessionsCache = {
                 at: now,
                 command,
-                sessions: execFile(command, ['list-sessions', '-F', '#S\t#{pane_current_path}'])
-                    .then(([stdout]) => new Map(
-                        stdout.toString().split('\n').filter(x => x).map(line => {
-                            const [name, ...rest] = line.split('\t')
-                            return [name, rest.join('\t')] as [string, string]
-                        }),
-                    ))
-                    .catch(() => new Map<string, string>()),
+                sessions: this.queryTmuxSessions(command).catch(() => new Map<string, TmuxSessionInfo>()),
             }
         }
         return this.tmuxSessionsCache.sessions
+    }
+
+    private async queryTmuxSessions (command: string): Promise<Map<string, TmuxSessionInfo>> {
+        const [stdout] = await execFile(command, ['list-sessions', '-F', '#S\t#{pane_pid}\t#{pane_current_command}\t#{pane_current_path}'])
+        const sessions = new Map<string, TmuxSessionInfo>()
+        for (const line of stdout.toString().split('\n').filter(x => x)) {
+            const [name, pid, currentCommand, ...rest] = line.split('\t')
+            sessions.set(name, { cwd: rest.join('\t'), currentCommand, shellPID: parseInt(pid) })
+        }
+
+        // When the pane's foreground program is ssh, show where it is connected instead of the
+        // (meaningless) local directory of the ssh process
+        const sshSessions = [...sessions.values()].filter(x => x.currentCommand === 'ssh' && x.shellPID)
+        if (sshSessions.length) {
+            const processes = await this.listProcesses()
+            for (const info of sshSessions) {
+                const ssh = this.findSSHProcess(info.shellPID, processes)
+                if (ssh) {
+                    info.sshDestination = this.parseSSHDestination(ssh.argv.slice(1)) ?? undefined
+                    info.sshCommandLine = ['ssh', ...ssh.argv.slice(1)].join(' ')
+                }
+            }
+        }
+        return sessions
+    }
+
+    private async listProcesses (): Promise<ProcessInfo[]> {
+        const [stdout] = await execFile('ps', ['-axo', 'pid=,ppid=,args='])
+        return stdout.toString().split('\n').map(line => {
+            const m = /^\s*(\d+)\s+(\d+)\s+(.*)$/.exec(line)
+            return m ? { pid: parseInt(m[1]), ppid: parseInt(m[2]), args: m[3] } : null
+        }).filter((x): x is ProcessInfo => !!x)
+    }
+
+    /** Walks the pane shell's descendants and returns the first ssh process found */
+    private findSSHProcess (shellPID: number, processes: ProcessInfo[]): { argv: string[] }|null {
+        const queue = [shellPID]
+        const seen = new Set<number>()
+        while (queue.length) {
+            const pid = queue.shift()!
+            if (seen.has(pid)) {
+                continue
+            }
+            seen.add(pid)
+            for (const proc of processes) {
+                if (proc.ppid !== pid) {
+                    continue
+                }
+                const argv = proc.args.split(/\s+/)
+                if (path.basename(argv[0]) === 'ssh') {
+                    return { argv }
+                }
+                queue.push(proc.pid)
+            }
+        }
+        return null
+    }
+
+    /** First positional argument of an ssh command line, skipping options that take a value */
+    private parseSSHDestination (args: string[]): string|null {
+        const optionsWithValue = new Set(['-B', '-b', '-c', '-D', '-E', '-e', '-F', '-I', '-i', '-J', '-L', '-l', '-m', '-O', '-o', '-P', '-p', '-Q', '-R', '-S', '-W', '-w'])
+        let user: string|null = null
+        for (let i = 0; i < args.length; i++) {
+            const arg = args[i]
+            if (arg === '--') {
+                return args[i + 1] ?? null
+            }
+            if (arg.startsWith('-')) {
+                if (arg === '-l') {
+                    user = args[++i] ?? null
+                } else if (optionsWithValue.has(arg.slice(0, 2)) && arg.length === 2) {
+                    i++
+                }
+                continue
+            }
+            const destination = arg.replace(/^ssh:\/\//, '').replace(/\/.*$/, '')
+            return user && !destination.includes('@') ? `${user}@${destination}` : destination
+        }
+        return null
     }
 
     async getNewTabParameters (profile: LocalProfile): Promise<NewTabParameters<TerminalTabComponent>> {
