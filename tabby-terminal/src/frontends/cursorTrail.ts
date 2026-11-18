@@ -45,6 +45,8 @@ const CORNER_Y: ('top'|'bottom')[] = ['top', 'bottom', 'bottom', 'top']
 export class CursorTrail {
     private options: CursorTrailOptions = { ...DEFAULT_CURSOR_TRAIL_OPTIONS }
     private color = '#ffffff'
+    private cursorColor = '#ffffff'
+    private backgroundColor?: string
     private canvas?: HTMLCanvasElement
     private ctx?: CanvasRenderingContext2D
     private screenElement?: HTMLElement
@@ -59,6 +61,8 @@ export class CursorTrail {
     private updatedAt = 0
     private cursorMovedAt = 0
     private lastCursorKey = ''
+    private lastViewportY = -1
+    private lastBaseY = -1
     private rafId?: number
     private disposed = false
 
@@ -86,6 +90,11 @@ export class CursorTrail {
             pointerEvents: 'none',
             // above the renderer canvases and decorations, below the IME helpers
             zIndex: '4',
+            // the quad inverts what is under it (see setColor) so text stays readable, like a
+            // block cursor, instead of being painted over
+            mixBlendMode: 'difference',
+            // only composited while a trail is on screen
+            display: 'none',
         })
         screen.appendChild(this.canvas)
         this.ctx = this.canvas.getContext('2d') ?? undefined
@@ -123,8 +132,45 @@ export class CursorTrail {
         }
     }
 
-    setColor (color: string): void {
-        this.color = color
+    /**
+     * The quad is drawn with `difference` blending in a colour chosen so the background under it
+     * turns into the cursor colour; text in a colour close to the cursor's then turns into
+     * (roughly) the background colour, i.e. the trail shows inverted text like a block cursor.
+     */
+    setColor (cursor: string, background?: string): void {
+        this.cursorColor = cursor
+        this.backgroundColor = background
+        this.color = this.computeBlendColor()
+    }
+
+    private computeBlendColor (): string {
+        const c = this.parseColor(this.cursorColor)
+        const b = this.backgroundColor ? this.parseColor(this.backgroundColor) : null
+        if (!c) {
+            return '#ffffff'
+        }
+        if (!b) {
+            return `rgb(${c.join(',')})`
+        }
+        // |F - b| = c per channel: F = b + c on dark backgrounds, b - c on light ones
+        const f = c.map((cv, i) => b[i] < 128 ? Math.min(255, b[i] + cv) : Math.max(0, b[i] - cv))
+        return `rgb(${f.join(',')})`
+    }
+
+    private parseColor (color: string): [number, number, number]|null {
+        const ctx = this.ctx ?? document.createElement('canvas').getContext('2d')
+        if (!ctx) {
+            return null
+        }
+        ctx.fillStyle = '#000000'
+        ctx.fillStyle = color
+        const normalized = String(ctx.fillStyle)
+        let m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(normalized)
+        if (m) {
+            return [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)]
+        }
+        m = /^rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(normalized)
+        return m ? [parseInt(m[1]), parseInt(m[2]), parseInt(m[3])] : null
     }
 
     dispose (): void {
@@ -254,6 +300,18 @@ export class CursorTrail {
         const cursorVisible = this.isCursorVisible()
         const newEdge = cursorVisible ? this.computeCursorEdge(cell) : null
 
+        // Scrolling (the viewport through scrollback, or output pushing lines up) moves the
+        // cursor on screen without the cursor itself moving: follow it without a trail
+        const buffer = this.xterm.buffer.active
+        if (buffer.viewportY !== this.lastViewportY || buffer.baseY !== this.lastBaseY) {
+            const first = this.lastViewportY < 0
+            this.lastViewportY = buffer.viewportY
+            this.lastBaseY = buffer.baseY
+            if (!first) {
+                this.edgeValid = false
+            }
+        }
+
         // --- update target (kitty: update_cursor_trail_target) ---
         let targetUpdated = false
         if (newEdge && now - this.cursorMovedAt >= this.options.delay) {
@@ -352,6 +410,7 @@ export class CursorTrail {
         if (this.ctx && this.canvas) {
             this.ctx.setTransform(1, 0, 0, 1, 0, 0)
             this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
+            this.canvas.style.display = 'none'
         }
     }
 
@@ -361,6 +420,7 @@ export class CursorTrail {
         }
         const ctx = this.ctx
         const dpr = window.devicePixelRatio || 1
+        this.canvas.style.display = ''
         ctx.setTransform(1, 0, 0, 1, 0, 0)
         ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
         if (this.opacity <= 0) {
