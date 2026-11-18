@@ -1,0 +1,210 @@
+# Example: one sidebar profile per tmux session.
+#
+# Merge the `profiles` and `groups` entries below into your Tabby config
+# (~/.config/tabby/config.yaml on Linux,
+#  ~/Library/Application Support/tabby/config.yaml on macOS).
+#
+# `tmux new-session -A -s NAME` attaches to session NAME if it exists and
+# creates it otherwise. The profile sidebar reads NAME from the `-s` / `-t`
+# argument, colours the icon green while that session is running and shows
+# its current path (or ssh destination) next to the profile name.
+# `weight: -1` keeps "tmux: main" above the numbered sessions, which are
+# sorted numerically (0, 1, 2, ... 10).
+
+profiles:
+  - id: local:custom:tmux-main
+    type: local
+    name: 'tmux: main'
+    group: tmux
+    weight: -1
+    icon: fas fa-layer-group
+    color: '#7aa2f7'
+    options:
+      command: tmux
+      args:
+        - new-session
+        - '-A'
+        - '-s'
+        - main
+      cwd: null
+      pauseAfterExit: false
+      runAsAdministrator: false
+  - id: local:custom:tmux-0
+    type: local
+    name: 'tmux: 0'
+    group: tmux
+    icon: fas fa-layer-group
+    color: '#7aa2f7'
+    options:
+      command: tmux
+      args:
+        - new-session
+        - '-A'
+        - '-s'
+        - '0'
+      cwd: null
+      pauseAfterExit: false
+      runAsAdministrator: false
+  - id: local:custom:tmux-1
+    type: local
+    name: 'tmux: 1'
+    group: tmux
+    icon: fas fa-layer-group
+    color: '#7aa2f7'
+    options:
+      command: tmux
+      args:
+        - new-session
+        - '-A'
+        - '-s'
+        - '1'
+      cwd: null
+      pauseAfterExit: false
+      runAsAdministrator: false
+  - id: local:custom:tmux-2
+    type: local
+    name: 'tmux: 2'
+    group: tmux
+    icon: fas fa-layer-group
+    color: '#7aa2f7'
+    options:
+      command: tmux
+      args:
+        - new-session
+        - '-A'
+        - '-s'
+        - '2'
+      cwd: null
+      pauseAfterExit: false
+      runAsAdministrator: false
+  - id: local:custom:tmux-3
+    type: local
+    name: 'tmux: 3'
+    group: tmux
+    icon: fas fa-layer-group
+    color: '#7aa2f7'
+    options:
+      command: tmux
+      args:
+        - new-session
+        - '-A'
+        - '-s'
+        - '3'
+      cwd: null
+      pauseAfterExit: false
+      runAsAdministrator: false
+  - id: local:custom:tmux-4
+    type: local
+    name: 'tmux: 4'
+    group: tmux
+    icon: fas fa-layer-group
+    color: '#7aa2f7'
+    options:
+      command: tmux
+      args:
+        - new-session
+        - '-A'
+        - '-s'
+        - '4'
+      cwd: null
+      pauseAfterExit: false
+      runAsAdministrator: false
+  - id: local:custom:tmux-5
+    type: local
+    name: 'tmux: 5'
+    group: tmux
+    icon: fas fa-layer-group
+    color: '#7aa2f7'
+    options:
+      command: tmux
+      args:
+        - new-session
+        - '-A'
+        - '-s'
+        - '5'
+      cwd: null
+      pauseAfterExit: false
+      runAsAdministrator: false
+  - id: local:custom:tmux-6
+    type: local
+    name: 'tmux: 6'
+    group: tmux
+    icon: fas fa-layer-group
+    color: '#7aa2f7'
+    options:
+      command: tmux
+      args:
+        - new-session
+        - '-A'
+        - '-s'
+        - '6'
+      cwd: null
+      pauseAfterExit: false
+      runAsAdministrator: false
+  - id: local:custom:tmux-7
+    type: local
+    name: 'tmux: 7'
+    group: tmux
+    icon: fas fa-layer-group
+    color: '#7aa2f7'
+    options:
+      command: tmux
+      args:
+        - new-session
+        - '-A'
+        - '-s'
+        - '7'
+      cwd: null
+      pauseAfterExit: false
+      runAsAdministrator: false
+  - id: local:custom:tmux-8
+    type: local
+    name: 'tmux: 8'
+    group: tmux
+    icon: fas fa-layer-group
+    color: '#7aa2f7'
+    options:
+      command: tmux
+      args:
+        - new-session
+        - '-A'
+        - '-s'
+        - '8'
+      cwd: null
+      pauseAfterExit: false
+      runAsAdministrator: false
+  - id: local:custom:tmux-9
+    type: local
+    name: 'tmux: 9'
+    group: tmux
+    icon: fas fa-layer-group
+    color: '#7aa2f7'
+    options:
+      command: tmux
+      args:
+        - new-session
+        - '-A'
+        - '-s'
+        - '9'
+      cwd: null
+      pauseAfterExit: false
+      runAsAdministrator: false
+  - id: local:custom:tmux-10
+    type: local
+    name: 'tmux: 10'
+    group: tmux
+    icon: fas fa-layer-group
+    color: '#7aa2f7'
+    options:
+      command: tmux
+      args:
+        - new-session
+        - '-A'
+        - '-s'
+        - '10'
+      cwd: null
+      pauseAfterExit: false
+      runAsAdministrator: false
+groups:
+  - id: tmux
+    name: tmux
