@@ -3,7 +3,10 @@
 # tmux profiles: the icon breathes while Claude works and bounces once it finishes a reply
 # or asks for permission.
 #
-#   UserPromptSubmit    -> set @tabby-working, unset @tabby-attention  (icon breathes)
+#   UserPromptSubmit,
+#   PreToolUse          -> set @tabby-working, unset @tabby-attention  (icon breathes; PreToolUse
+#                          also covers turns that start without a prompt, e.g. when a
+#                          background task reports back)
 #   Stop, Notification  -> unset @tabby-working, set @tabby-attention  (icon bounces)
 #
 # The sidebar clears @tabby-attention itself once the session's tab is looked at, and
@@ -46,7 +49,7 @@ def tmux(*commands):
     return '[ -n "$TMUX_PANE" ] && tmux ' + chained + ' >/dev/null 2>&1; exit 0'
 DONE = tmux('-u @tabby-working', '@tabby-attention 1')
 START = tmux('@tabby-working 1', '-u @tabby-attention')
-WANTED = {'Stop': DONE, 'Notification': DONE, 'UserPromptSubmit': START}
+WANTED = {'Stop': DONE, 'Notification': DONE, 'UserPromptSubmit': START, 'PreToolUse': START}
 
 settings = {}
 if os.path.exists(path) and os.path.getsize(path) > 0:
@@ -68,7 +71,10 @@ for event in list(hooks):
 
 if mode == 'install':
     for event, command in WANTED.items():
-        hooks.setdefault(event, []).append({'hooks': [{'type': 'command', 'command': command}]})
+        group = {'hooks': [{'type': 'command', 'command': command}]}
+        if event == 'PreToolUse':
+            group = {'matcher': '*', **group}
+        hooks.setdefault(event, []).append(group)
 if not hooks:
     del settings['hooks']
 
