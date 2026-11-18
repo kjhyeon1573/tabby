@@ -40,12 +40,16 @@ export class ProfileTreeComponent extends BaseComponent implements AfterViewChec
 
     /** Profiles whose icon bounces until their tab is looked at */
     attentionProfiles: Record<string, boolean|undefined> = {}
+    /** Profiles whose icon breathes while something is in progress in them */
+    workingProfiles: Record<string, boolean|undefined> = {}
     /** When each profile's current foreground program was first seen running */
     private busySince = new Map<string, number>()
     /** Profiles whose long-running program has finished while their tab was not being looked at */
     private finishedRuns = new Set<string>()
     /** A program has to run at least this long for its exit to be worth a bounce */
     private static readonly LONG_RUN_MS = 10000
+    /** A job has to run this long before it shows as in progress, so quick commands do not flicker */
+    private static readonly WORKING_AFTER_MS = 2000
 
 
     panelMinWidth = 200
@@ -499,6 +503,7 @@ export class ProfileTreeComponent extends BaseComponent implements AfterViewChec
         const now = Date.now()
         const viewed = this.viewedProfileIDs()
         const attention: Record<string, boolean> = {}
+        const working: Record<string, boolean> = {}
         for (const profile of profiles) {
             const id = profile.id
             if (!id) {
@@ -514,11 +519,18 @@ export class ProfileTreeComponent extends BaseComponent implements AfterViewChec
             const since = this.busySince.get(id)
             if (status.busy) {
                 this.busySince.set(id, since ?? now)
+                if (now - (since ?? now) >= ProfileTreeComponent.WORKING_AFTER_MS) {
+                    working[id] = true
+                }
             } else if (since !== undefined) {
                 this.busySince.delete(id)
                 if (now - since >= ProfileTreeComponent.LONG_RUN_MS) {
                     this.finishedRuns.add(id)
                 }
+            }
+
+            if (status.working) {
+                working[id] = true
             }
 
             if (viewed.has(id)) {
@@ -534,6 +546,7 @@ export class ProfileTreeComponent extends BaseComponent implements AfterViewChec
             }
         }
         this.attentionProfiles = attention
+        this.workingProfiles = working
     }
 
     /** Ids of the profiles whose tabs are on screen in the focused window */
@@ -555,11 +568,20 @@ export class ProfileTreeComponent extends BaseComponent implements AfterViewChec
 
     /** A collapsed group bounces when any profile inside it does */
     groupHasAttention (group: PartialProfileGroup<CollapsableProfileGroup>): boolean {
+        return this.collapsedGroupHas(group, this.attentionProfiles)
+    }
+
+    /** ...and breathes when any profile inside it is working (and none bounces) */
+    groupIsWorking (group: PartialProfileGroup<CollapsableProfileGroup>): boolean {
+        return !this.groupHasAttention(group) && this.collapsedGroupHas(group, this.workingProfiles)
+    }
+
+    private collapsedGroupHas (group: PartialProfileGroup<CollapsableProfileGroup>, flags: Record<string, boolean|undefined>): boolean {
         if (!group.collapsed) {
             return false
         }
         const visit = (g: PartialProfileGroup<CollapsableProfileGroup>): boolean => {
-            if ((g.profiles ?? []).some(p => !!p.id && !!this.attentionProfiles[p.id])) {
+            if ((g.profiles ?? []).some(p => !!p.id && !!flags[p.id])) {
                 return true
             }
             return (g.children ?? []).some(visit)

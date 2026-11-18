@@ -1,11 +1,13 @@
 #!/bin/sh
-# Installs (or removes) Claude Code hooks that make this Tabby fork's profile sidebar
-# bounce a tmux profile's icon when Claude finishes a reply or asks for permission.
+# Installs (or removes) Claude Code hooks that drive this Tabby fork's profile sidebar for
+# tmux profiles: the icon breathes while Claude works and bounces once it finishes a reply
+# or asks for permission.
 #
-#   Stop, Notification  -> tmux set-option @tabby-attention 1   (icon starts bouncing)
-#   UserPromptSubmit    -> tmux set-option -u @tabby-attention  (cleared on the next prompt)
+#   UserPromptSubmit    -> set @tabby-working, unset @tabby-attention  (icon breathes)
+#   Stop, Notification  -> unset @tabby-working, set @tabby-attention  (icon bounces)
 #
-# The sidebar also clears the flag itself once the session's tab is looked at.
+# The sidebar clears @tabby-attention itself once the session's tab is looked at, and
+# ignores @tabby-working once the session stops producing output (an interrupted reply).
 # The hooks do nothing when Claude is not running inside tmux.
 #
 # Usage: install-tabby-attention-hooks.sh [--uninstall]
@@ -39,9 +41,12 @@ import json, os, sys
 
 path, mode = sys.argv[1], sys.argv[2]
 MARKER = '@tabby-attention'
-SET = '[ -n "$TMUX_PANE" ] && tmux set-option -t "$TMUX_PANE" @tabby-attention 1 >/dev/null 2>&1; exit 0'
-UNSET = '[ -n "$TMUX_PANE" ] && tmux set-option -t "$TMUX_PANE" -u @tabby-attention >/dev/null 2>&1; exit 0'
-WANTED = {'Stop': SET, 'Notification': SET, 'UserPromptSubmit': UNSET}
+def tmux(*commands):
+    chained = " ';' ".join('set-option -t "$TMUX_PANE" ' + c for c in commands)
+    return '[ -n "$TMUX_PANE" ] && tmux ' + chained + ' >/dev/null 2>&1; exit 0'
+DONE = tmux('-u @tabby-working', '@tabby-attention 1')
+START = tmux('@tabby-working 1', '-u @tabby-attention')
+WANTED = {'Stop': DONE, 'Notification': DONE, 'UserPromptSubmit': START}
 
 settings = {}
 if os.path.exists(path) and os.path.getsize(path) > 0:
