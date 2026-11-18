@@ -38,6 +38,15 @@ export class ProfileTreeComponent extends BaseComponent implements AfterViewChec
     private statusTimer: ReturnType<typeof setInterval>|null = null
     private alignedNamesSignature = ''
 
+    /** Profiles whose icon bounces until their tab is looked at */
+    attentionProfiles: Record<string, boolean|undefined> = {}
+    /** When each profile's current foreground program was first seen running */
+    private busySince = new Map<string, number>()
+    /** Profiles whose long-running program has finished while their tab was not being looked at */
+    private finishedRuns = new Set<string>()
+    /** A program has to run at least this long for its exit to be worth a bounce */
+    private static readonly LONG_RUN_MS = 10000
+
 
     panelMinWidth = 200
     panelMaxWidth = 600
@@ -68,6 +77,9 @@ export class ProfileTreeComponent extends BaseComponent implements AfterViewChec
             }
         })
         this.statusTimer = setInterval(() => this.refreshProfileStatus(), 1000)
+        // looking at a tab (switching to it, or focusing the window on it) stops its bounce right away
+        this.subscribeUntilDestroyed(this.app.activeTabChange$, () => this.refreshProfileStatus())
+        window.addEventListener('focus', this.onWindowFocus)
         this.app.tabsChanged$.subscribe(() => this.tabStateChanged())
         this.app.activeTabChange$.subscribe(() => this.tabStateChanged())
     }
@@ -255,6 +267,7 @@ export class ProfileTreeComponent extends BaseComponent implements AfterViewChec
             clearInterval(this.statusTimer)
             this.statusTimer = null
         }
+        window.removeEventListener('focus', this.onWindowFocus)
         super.ngOnDestroy()
     }
 
@@ -472,6 +485,86 @@ export class ProfileTreeComponent extends BaseComponent implements AfterViewChec
             }
         }))
         this.profileStatus = next
+        this.updateAttention(profiles, next)
+    }
+
+    private onWindowFocus = () => this.refreshProfileStatus()
+
+    /**
+     * A profile asks for attention when its session flagged itself (status.attention, e.g. a
+     * Claude Code hook after a reply) or when a program that ran for LONG_RUN_MS returned to the
+     * shell. Both are dropped once the profile's tab is visible in the focused window.
+     */
+    private updateAttention (profiles: PartialProfile<Profile>[], statuses: Record<string, ProfileStatus|undefined>): void {
+        const now = Date.now()
+        const viewed = this.viewedProfileIDs()
+        const attention: Record<string, boolean> = {}
+        for (const profile of profiles) {
+            const id = profile.id
+            if (!id) {
+                continue
+            }
+            const status = statuses[id]
+            if (!status?.active) {
+                this.busySince.delete(id)
+                this.finishedRuns.delete(id)
+                continue
+            }
+
+            const since = this.busySince.get(id)
+            if (status.busy) {
+                this.busySince.set(id, since ?? now)
+            } else if (since !== undefined) {
+                this.busySince.delete(id)
+                if (now - since >= ProfileTreeComponent.LONG_RUN_MS) {
+                    this.finishedRuns.add(id)
+                }
+            }
+
+            if (viewed.has(id)) {
+                this.finishedRuns.delete(id)
+                if (status.attention) {
+                    status.attention = false
+                    this.profilesService.providerForProfile(profile)?.clearProfileAttention(profile).catch(() => null)
+                }
+                continue
+            }
+            if (!!status.attention || this.finishedRuns.has(id)) {
+                attention[id] = true
+            }
+        }
+        this.attentionProfiles = attention
+    }
+
+    /** Ids of the profiles whose tabs are on screen in the focused window */
+    private viewedProfileIDs (): Set<string> {
+        const ids = new Set<string>()
+        const top = this.app.activeTab
+        if (!top || !document.hasFocus()) {
+            return ids
+        }
+        for (const tab of top instanceof SplitTabComponent ? top.getAllTabs() : [top]) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+            const id = (tab as any).profile?.id
+            if (id) {
+                ids.add(id)
+            }
+        }
+        return ids
+    }
+
+    /** A collapsed group bounces when any profile inside it does */
+    groupHasAttention (group: PartialProfileGroup<CollapsableProfileGroup>): boolean {
+        if (!group.collapsed) {
+            return false
+        }
+        const visit = (g: PartialProfileGroup<CollapsableProfileGroup>): boolean => {
+            if ((g.profiles ?? []).some(p => !!p.id && !!this.attentionProfiles[p.id])) {
+                return true
+            }
+            return (g.children ?? []).some(visit)
+        }
+        return visit(group)
     }
 
     async onFilterChange (): Promise<void> {
