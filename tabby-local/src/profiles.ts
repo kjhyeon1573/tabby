@@ -12,9 +12,19 @@ interface TmuxSessionInfo {
     cwd: string
     currentCommand: string
     shellPID: number
+    attention: boolean
     sshDestination?: string
     sshCommandLine?: string
 }
+
+/**
+ * tmux session option that asks the sidebar for attention, e.g. from a Claude Code Stop hook:
+ * `tmux set-option -t "$TMUX_PANE" @tabby-attention 1` (cleared when the profile's tab is viewed)
+ */
+const TMUX_ATTENTION_OPTION = '@tabby-attention'
+
+/** Foreground commands that mean the pane is idle at a prompt */
+const SHELL_COMMANDS = new Set(['bash', 'zsh', 'fish', 'sh', 'dash', 'ksh', 'tcsh', 'csh', 'nu', 'xonsh', 'elvish', 'pwsh', 'tmux'])
 
 interface ProcessInfo {
     pid: number
@@ -78,6 +88,10 @@ export class LocalProfilesService extends ProfileProvider<LocalProfile> {
         if (!info) {
             return { active: false, description: `tmux session "${session}" is not running` }
         }
+        const flags = {
+            attention: info.attention,
+            busy: !!info.currentCommand && !SHELL_COMMANDS.has(info.currentCommand.replace(/^-/, '')),
+        }
         if (info.sshDestination) {
             const host = info.sshDestination.replace(/^.*@/, '').replace(/:\d+$/, '')
             return {
@@ -85,13 +99,25 @@ export class LocalProfilesService extends ProfileProvider<LocalProfile> {
                 description: `tmux session "${session}" is connected to ${info.sshDestination} over ssh: ${info.sshCommandLine}`,
                 detail: info.sshCommandLine ?? `ssh ${info.sshDestination}`,
                 detailShort: host,
+                ...flags,
             }
         }
         return {
             active: true,
             description: `tmux session "${session}" is running${info.cwd ? ` in ${info.cwd}` : ''}`,
             detail: info.cwd ? this.abbreviateHome(info.cwd) : undefined,
+            ...flags,
         }
+    }
+
+    async clearProfileAttention (profile: PartialProfile<LocalProfile>): Promise<void> {
+        const session = this.getTmuxSessionName(profile)
+        if (session === null) {
+            return
+        }
+        // `=NAME:` matches the session name exactly, so numeric names are not read as window indexes
+        await execFile(profile.options?.command ?? 'tmux', ['set-option', '-t', `=${session}:`, '-u', TMUX_ATTENTION_OPTION])
+        this.tmuxSessionsCache = null
     }
 
     getTmuxSessionName (profile: PartialProfile<LocalProfile>): string|null {
@@ -130,11 +156,16 @@ export class LocalProfilesService extends ProfileProvider<LocalProfile> {
     }
 
     private async queryTmuxSessions (command: string): Promise<Map<string, TmuxSessionInfo>> {
-        const [stdout] = await execFile(command, ['list-sessions', '-F', '#S\t#{pane_pid}\t#{pane_current_command}\t#{pane_current_path}'])
+        const [stdout] = await execFile(command, ['list-sessions', '-F', `#S\t#{pane_pid}\t#{pane_current_command}\t#{${TMUX_ATTENTION_OPTION}}\t#{pane_current_path}`])
         const sessions = new Map<string, TmuxSessionInfo>()
         for (const line of stdout.toString().split('\n').filter(x => x)) {
-            const [name, pid, currentCommand, ...rest] = line.split('\t')
-            sessions.set(name, { cwd: rest.join('\t'), currentCommand, shellPID: parseInt(pid) })
+            const [name, pid, currentCommand, attention, ...rest] = line.split('\t')
+            sessions.set(name, {
+                cwd: rest.join('\t'),
+                currentCommand,
+                shellPID: parseInt(pid),
+                attention: !!attention && attention !== '0',
+            })
         }
 
         // When the pane's foreground program is ssh, show where it is connected instead of the

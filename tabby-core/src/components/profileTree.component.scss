@@ -133,6 +133,20 @@ input {
             }
         }
 
+        // the icon hops like a macOS Dock icon until the profile's tab is looked at
+        // (attentionProfiles / groupHasAttention); the row stops clipping so the hop can leave it
+        &.attention {
+            overflow: visible;
+        }
+
+        > .fw-20.attention {
+            animation: profile-attention-bounce 1.4s infinite;
+
+            @media (prefers-reduced-motion: reduce) {
+                animation: profile-attention-pulse 1.4s ease-in-out infinite;
+            }
+        }
+
         // the stretching quad that follows the path from its old slot to the new one
         .detail-trail {
             position: absolute;
@@ -171,6 +185,19 @@ input {
     }
 }
 
+
+@keyframes profile-attention-bounce {
+    // a high hop (decelerating up, accelerating down), a small rebound, then rest
+    0% { transform: translateY(0); animation-timing-function: cubic-bezier(.3, .6, .5, 1); }
+    18% { transform: translateY(-7px); animation-timing-function: cubic-bezier(.5, 0, .7, .4); }
+    36% { transform: translateY(0); animation-timing-function: cubic-bezier(.3, .6, .5, 1); }
+    46% { transform: translateY(-2.5px); animation-timing-function: cubic-bezier(.5, 0, .7, .4); }
+    56%, 100% { transform: translateY(0); }
+}
+
+@keyframes profile-attention-pulse {
+    50% { opacity: .35; }
+}
 
 @keyframes profile-detail-marquee {
     // hold, scroll left at constant speed, hold, then snap back to the start on loop

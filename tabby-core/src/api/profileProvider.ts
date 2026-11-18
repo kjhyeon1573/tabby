@@ -67,6 +67,10 @@ export interface ProfileStatus {
     detail?: string
     /** Compact form of `detail` shown beside the name when idle (defaults to the last path segment of `detail`) */
     detailShort?: string
+    /** Something in the session asked to be looked at (e.g. a Claude Code hook after a reply finished) */
+    attention?: boolean
+    /** A foreground program other than the shell is running; the sidebar flags the profile when a long run ends */
+    busy?: boolean
 }
 
 export abstract class ProfileProvider<P extends Profile> {
@@ -93,6 +97,10 @@ export abstract class ProfileProvider<P extends Profile> {
     async getProfileStatus (_profile: PartialProfile<P>): Promise<ProfileStatus|null> {
         return null
     }
+
+    /** Clears a ProfileStatus.attention request once the user has looked at the profile's tab */
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    async clearProfileAttention (_profile: PartialProfile<P>): Promise<void> { }
 
     deleteProfile (profile: P): void { }
 }
