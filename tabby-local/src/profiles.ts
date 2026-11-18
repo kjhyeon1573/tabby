@@ -13,6 +13,9 @@ interface TmuxSessionInfo {
     currentCommand: string
     shellPID: number
     attention: boolean
+    working: boolean
+    /** Unix time (ms) of the window's last output */
+    activityAt: number
     sshDestination?: string
     sshCommandLine?: string
 }
@@ -23,8 +26,29 @@ interface TmuxSessionInfo {
  */
 const TMUX_ATTENTION_OPTION = '@tabby-attention'
 
+/**
+ * tmux session option set while something works in the session, e.g. from a Claude Code
+ * UserPromptSubmit hook (unset again by its Stop / Notification hooks)
+ */
+const TMUX_WORKING_OPTION = '@tabby-working'
+
+/**
+ * @tabby-working only counts while the session keeps producing output (Claude's spinner redraws
+ * constantly), so an interrupted reply that never reaches the Stop hook stops showing as working
+ */
+const WORKING_ACTIVITY_TIMEOUT_MS = 20000
+
 /** Foreground commands that mean the pane is idle at a prompt */
 const SHELL_COMMANDS = new Set(['bash', 'zsh', 'fish', 'sh', 'dash', 'ksh', 'tcsh', 'csh', 'nu', 'xonsh', 'elvish', 'pwsh', 'tmux'])
+
+/**
+ * Long-lived interactive programs: running them is not a job in progress, so they neither show as
+ * busy nor flag the profile when they exit. Claude reports its own state through the hook options.
+ */
+const INTERACTIVE_COMMANDS = new Set([
+    'claude', 'vim', 'nvim', 'vi', 'view', 'nano', 'micro', 'hx', 'emacs', 'less', 'more', 'most', 'man',
+    'top', 'htop', 'btop', 'atop', 'ssh', 'mosh', 'mosh-client', 'telnet', 'lazygit', 'tig', 'ranger', 'yazi', 'nnn', 'mc',
+])
 
 interface ProcessInfo {
     pid: number
@@ -90,7 +114,8 @@ export class LocalProfilesService extends ProfileProvider<LocalProfile> {
         }
         const flags = {
             attention: info.attention,
-            busy: !!info.currentCommand && !SHELL_COMMANDS.has(info.currentCommand.replace(/^-/, '')),
+            working: info.working && Date.now() - info.activityAt < WORKING_ACTIVITY_TIMEOUT_MS,
+            busy: this.isJobCommand(info.currentCommand),
         }
         if (info.sshDestination) {
             const host = info.sshDestination.replace(/^.*@/, '').replace(/:\d+$/, '')
@@ -108,6 +133,11 @@ export class LocalProfilesService extends ProfileProvider<LocalProfile> {
             detail: info.cwd ? this.abbreviateHome(info.cwd) : undefined,
             ...flags,
         }
+    }
+
+    private isJobCommand (command: string): boolean {
+        const name = command.replace(/^-/, '')
+        return !!name && !SHELL_COMMANDS.has(name) && !INTERACTIVE_COMMANDS.has(name)
     }
 
     async clearProfileAttention (profile: PartialProfile<LocalProfile>): Promise<void> {
@@ -156,15 +186,17 @@ export class LocalProfilesService extends ProfileProvider<LocalProfile> {
     }
 
     private async queryTmuxSessions (command: string): Promise<Map<string, TmuxSessionInfo>> {
-        const [stdout] = await execFile(command, ['list-sessions', '-F', `#S\t#{pane_pid}\t#{pane_current_command}\t#{${TMUX_ATTENTION_OPTION}}\t#{pane_current_path}`])
+        const [stdout] = await execFile(command, ['list-sessions', '-F', `#S\t#{pane_pid}\t#{pane_current_command}\t#{${TMUX_ATTENTION_OPTION}}\t#{${TMUX_WORKING_OPTION}}\t#{window_activity}\t#{pane_current_path}`])
         const sessions = new Map<string, TmuxSessionInfo>()
         for (const line of stdout.toString().split('\n').filter(x => x)) {
-            const [name, pid, currentCommand, attention, ...rest] = line.split('\t')
+            const [name, pid, currentCommand, attention, working, activity, ...rest] = line.split('\t')
             sessions.set(name, {
                 cwd: rest.join('\t'),
                 currentCommand,
                 shellPID: parseInt(pid),
                 attention: !!attention && attention !== '0',
+                working: !!working && working !== '0',
+                activityAt: parseInt(activity) * 1000 || 0,
             })
         }
 

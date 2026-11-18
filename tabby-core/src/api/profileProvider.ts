@@ -69,8 +69,10 @@ export interface ProfileStatus {
     detailShort?: string
     /** Something in the session asked to be looked at (e.g. a Claude Code hook after a reply finished) */
     attention?: boolean
-    /** A foreground program other than the shell is running; the sidebar flags the profile when a long run ends */
+    /** A job (not the shell or an interactive program) runs in the foreground; the sidebar flags the profile when a long run ends */
     busy?: boolean
+    /** Something reports that it is working in the session (e.g. Claude Code between a prompt and its reply) */
+    working?: boolean
 }
 
 export abstract class ProfileProvider<P extends Profile> {

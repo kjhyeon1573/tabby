@@ -147,6 +147,11 @@ input {
             }
         }
 
+        // a slow fade in and out while something is in progress (workingProfiles / groupIsWorking)
+        > .fw-20.working {
+            animation: profile-working-breathe 2.4s ease-in-out infinite;
+        }
+
         // the stretching quad that follows the path from its old slot to the new one
         .detail-trail {
             position: absolute;
@@ -193,6 +198,11 @@ input {
     36% { transform: translateY(0); animation-timing-function: cubic-bezier(.3, .6, .5, 1); }
     46% { transform: translateY(-2.5px); animation-timing-function: cubic-bezier(.5, 0, .7, .4); }
     56%, 100% { transform: translateY(0); }
+}
+
+@keyframes profile-working-breathe {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .3; }
 }
 
 @keyframes profile-attention-pulse {
