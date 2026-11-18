@@ -708,7 +708,7 @@ export class XTermFrontend extends Frontend {
             this.xterm.options.theme = theme
             this.configuredTheme = theme
         }
-        this.cursorTrail.setColor(scheme.cursor || scheme.foreground)
+        this.cursorTrail.setColor(scheme.cursor || scheme.foreground, scheme.background)
     }
 
     private applyCursorTrailConfig (): void {
