@@ -32,6 +32,11 @@ export class SFTPPanelComponent {
     showFilter = false
     filterText = ''
 
+    /** Entry being dragged to another directory of this panel */
+    draggedItem: SFTPFile|null = null
+    /** Row / breadcrumb currently highlighted as the drop target */
+    dropTargetKey: string|null = null
+
     constructor (
         private ngbModal: NgbModal,
         private notifications: NotificationsService,
@@ -156,6 +161,87 @@ export class SFTPPanelComponent {
 
     goUp (): void {
         this.navigate(path.dirname(this.path))
+    }
+
+    get parentPath (): string {
+        return path.dirname(this.path)
+    }
+
+    ////// MOVING BY DRAG AND DROP //////
+    // An entry dragged onto a directory row, "Go up" or a breadcrumb is renamed into that directory.
+
+    onMoveDragStart (item: SFTPFile, event: DragEvent): void {
+        this.draggedItem = item
+        if (event.dataTransfer) {
+            event.dataTransfer.effectAllowed = 'move'
+            event.dataTransfer.setData('text/plain', item.fullPath)
+        }
+    }
+
+    onMoveDragEnd (): void {
+        this.draggedItem = null
+        this.dropTargetKey = null
+    }
+
+    onMoveDragOver (key: string, directory: string|null, event: DragEvent): void {
+        if (!this.draggedItem) {
+            return // files dragged in from outside: an upload, handled by the dropZone
+        }
+        event.stopPropagation()
+        if (!this.canMoveInto(this.draggedItem, directory)) {
+            if (this.dropTargetKey === key) {
+                this.dropTargetKey = null
+            }
+            return
+        }
+        event.preventDefault()
+        if (event.dataTransfer) {
+            event.dataTransfer.dropEffect = 'move'
+        }
+        this.dropTargetKey = key
+    }
+
+    onMoveDragLeave (key: string): void {
+        if (this.dropTargetKey === key) {
+            this.dropTargetKey = null
+        }
+    }
+
+    async onMoveDrop (directory: string|null, event: DragEvent): Promise<void> {
+        const item = this.draggedItem
+        if (!item) {
+            return
+        }
+        event.preventDefault()
+        event.stopPropagation()
+        this.onMoveDragEnd()
+        if (directory !== null && this.canMoveInto(item, directory)) {
+            await this.moveItem(item, directory)
+        }
+    }
+
+    private canMoveInto (item: SFTPFile, directory: string|null): boolean {
+        if (directory === null || path.dirname(item.fullPath) === directory) {
+            return false
+        }
+        // a directory cannot go into itself or one of its own subdirectories
+        return directory !== item.fullPath && !directory.startsWith(item.fullPath.replace(/\/+$/, '') + '/')
+    }
+
+    async moveItem (item: SFTPFile, directory: string): Promise<void> {
+        const target = path.join(directory, item.name)
+        const exists = await this.sftp.stat(target).then(() => true, () => false)
+        if (exists) {
+            this.notifications.error(`${target} already exists`)
+            return
+        }
+        try {
+            await this.sftp.rename(item.fullPath, target)
+            this.notifications.notice(`Moved ${item.name} to ${directory}`)
+        } catch (error) {
+            this.notifications.error(`Could not move ${item.name}: ${error.message}`)
+        }
+        await this.navigate(this.path)
     }
 
     async open (item: SFTPFile): Promise<void> {

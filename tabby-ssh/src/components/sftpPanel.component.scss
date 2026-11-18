@@ -37,6 +37,18 @@
         &:hover {
             background: rgba(white, .05);
         }
+
+        &.dragging {
+            opacity: .5;
+        }
+    }
+
+    // a directory row / "Go up" / breadcrumb that an entry being dragged would move into
+    .drop-target {
+        background: color-mix(in srgb, var(--bs-primary) 25%, transparent) !important;
+        outline: 1px dashed var(--bs-primary);
+        outline-offset: -1px;
+        border-radius: .25rem;
     }
 
     .mode, .size, .date {
