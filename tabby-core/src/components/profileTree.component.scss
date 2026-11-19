@@ -52,6 +52,11 @@ input {
             &.active {
                 background-color: var(--theme-bg-more);
                 box-shadow: inset 2px 0 0 var(--theme-primary);
+
+                // hovering still shows the usual hover colour (the action buttons sit on it)
+                &:hover {
+                    background-color: var(--theme-secondary);
+                }
             }
 
             // two lines while hovered: keep the icon centred on the first line
