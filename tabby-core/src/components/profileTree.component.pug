@@ -36,6 +36,7 @@
                             (mouseenter)='onProfileRowEnter($event)',
                             (mouseleave)='onProfileRowLeave($event)',
                             [class.attention]='attentionProfiles[profile.id]',
+                            [class.active]='isActiveProfile(profile)',
                             href='#'
                         )
                             .fw-20(
@@ -59,6 +60,12 @@
                                         span.detail-suffix {{ parts[2] }}
 
                             .actions
+                                .action(
+                                    *ngIf='isStateful(profile)',
+                                    (click)='launchProfile(profile, true)',
+                                    [title]='"Open in tab bar"|translate'
+                                )
+                                    .fa.fa-fw.far.fa-window-maximize
                                 .action((click)='launchProfile(profile)')
                                     .fa.fa-fw.fas.fa-play
 

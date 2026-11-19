@@ -97,8 +97,9 @@ export class AppRootComponent {
         this.hotkeys.hotkey$.subscribe((hotkey: string) => {
             if (hotkey.startsWith('tab-')) {
                 const index = parseInt(hotkey.split('-')[1])
-                if (index <= this.app.tabs.length) {
-                    this.app.selectTab(this.app.tabs[index - 1])
+                const tabs = this.app.visibleTabs
+                if (index <= tabs.length) {
+                    this.app.selectTab(tabs[index - 1])
                 }
             }
             if (this.app.activeTab) {
@@ -258,7 +259,11 @@ export class AppRootComponent {
                 this.app.wrapAndAddTab(tab)
             }
         }
-        this.app.moveTabToIndex(tab, event.currentIndex)
+        // the drop index counts only the tabs shown in the tab bar
+        const target = this.app.visibleTabs.filter(t => t !== tab)[event.currentIndex] as BaseTabComponent|undefined
+        const index = target ? this.app.tabs.indexOf(target) : this.app.tabs.length
+        const from = this.app.tabs.indexOf(tab)
+        this.app.moveTabToIndex(tab, from >= 0 && from < index ? index - 1 : index)
     }
 
     onTransfersChange () {

@@ -48,6 +48,12 @@ input {
         &.profile-item {
             align-items: center;
 
+            // the profile whose tab is on screen (its tab may be hidden from the tab bar)
+            &.active {
+                background-color: var(--theme-bg-more);
+                box-shadow: inset 2px 0 0 var(--theme-primary);
+            }
+
             // two lines while hovered: keep the icon centred on the first line
             &.hovered {
                 align-items: flex-start;

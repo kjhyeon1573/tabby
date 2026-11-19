@@ -74,6 +74,20 @@ export abstract class BaseTabComponent extends BaseComponent {
 
     private _pinned = false
 
+    /**
+     * Keeps the tab out of the tab bar; it stays reachable from the profile sidebar (used for
+     * tmux session tabs). null means nobody decided yet, and the sidebar hides tabs of its
+     * stateful profiles by default.
+     */
+    get hiddenFromTabBar (): boolean|null { return this._hiddenFromTabBar }
+
+    set hiddenFromTabBar (value: boolean|null) {
+        this._hiddenFromTabBar = value
+        this.recoveryStateChangedHint.next()
+    }
+
+    private _hiddenFromTabBar: boolean|null = null
+
     get effectivelyPinned (): boolean {
         if (this.pinned) {
             return true
