@@ -16,7 +16,14 @@ export class DropZoneDirective implements AfterViewInit {
     ) { }
 
     ngAfterViewInit (): void {
-        this.el.nativeElement.addEventListener('dragover', () => {
+        // only files dragged in from outside are uploads; drags inside the page (e.g. moving an
+        // entry within the SFTP panel) are left to their own handlers
+        const hasFiles = (event: DragEvent) => !!event.dataTransfer?.types.includes('Files')
+
+        this.el.nativeElement.addEventListener('dragover', (event: DragEvent) => {
+            if (!hasFiles(event)) {
+                return
+            }
             if (!this.dropHint) {
                 this.dropHint = document.createElement('div')
                 this.dropHint.className = 'drop-zone-hint'
@@ -28,6 +35,9 @@ export class DropZoneDirective implements AfterViewInit {
             }
         })
         this.el.nativeElement.addEventListener('drop', async (event: DragEvent) => {
+            if (!hasFiles(event)) {
+                return
+            }
             this.removeHint()
             this.transfer.emit(await this.platform.startUploadFromDragEvent(event, true))
         })
