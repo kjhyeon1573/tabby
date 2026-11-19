@@ -152,6 +152,16 @@ input {
             animation: profile-working-breathe 2.4s ease-in-out infinite;
         }
 
+        // the "Quick connect" heading above the rows built from the filter text
+        &.quick-connect-header {
+            cursor: default;
+            opacity: .7;
+
+            &:hover {
+                background-color: transparent;
+            }
+        }
+
         // the stretching quad that follows the path from its old slot to the new one
         .detail-trail {
             position: absolute;

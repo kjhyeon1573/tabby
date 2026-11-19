@@ -1257,5 +1257,8 @@ msgstr ""
 msgid "Side tab bar width"
 msgstr ""
 
+msgid "Filter or enter an address"
+msgstr ""
+
 msgid "You can also drag the inner edge of the tab bar; double-click it to reset"
 msgstr ""

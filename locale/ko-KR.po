@@ -2600,5 +2600,8 @@ msgstr "블러 처리된 창 위에 색 테마 배경을 얼마나 진하게 깔
 msgid "Side tab bar width"
 msgstr "세로 탭 바 너비"
 
+msgid "Filter or enter an address"
+msgstr "필터 또는 주소 입력"
+
 msgid "You can also drag the inner edge of the tab bar; double-click it to reset"
 msgstr "탭 바 안쪽 가장자리를 드래그해도 조절되며, 더블클릭하면 기본값으로 돌아갑니다"

@@ -8,7 +8,7 @@ import { ConfigService } from '../services/config.service'
 import { ProfilesService } from '../services/profiles.service'
 import { AppService } from '../services/app.service'
 import { PlatformService } from '../api/platform'
-import { ProfileProvider, ProfileStatus } from '../api/index'
+import { ProfileProvider, ProfileStatus, QuickConnectProfileProvider } from '../api/index'
 import { BaseTabComponent } from './baseTab.component'
 import { SplitTabComponent } from './splitTab.component'
 import { PartialProfileGroup, ProfileGroup, PartialProfile, Profile } from '../index'
@@ -17,6 +17,20 @@ import { BaseComponent } from './base.component'
 interface CollapsableProfileGroup extends ProfileGroup {
     collapsed: boolean
     children: PartialProfileGroup<CollapsableProfileGroup>[]
+}
+
+/** What the filter box's text would connect to through one quick-connect provider (ssh, serial, telnet, ...) */
+interface QuickConnectOption {
+    provider: QuickConnectProfileProvider<any>
+    profile: PartialProfile<Profile>
+    icon: string
+}
+
+/** Fallback icons for quick-connect profiles, which come without one */
+const QUICK_CONNECT_ICONS: Record<string, string|undefined> = {
+    ssh: 'fas fa-desktop',
+    serial: 'fas fa-microchip',
+    telnet: 'fas fa-network-wired',
 }
 
 /** @hidden */
@@ -31,6 +45,8 @@ export class ProfileTreeComponent extends BaseComponent implements AfterViewChec
 
     filteredProfiles: PartialProfile<Profile>[] = []
     @Input() filter = ''
+    /** Quick-connect rows offered for the current filter text, most likely provider first */
+    quickConnectOptions: QuickConnectOption[] = []
 
     /** Live status per profile id, filled by ProfileProvider.getProfileStatus (e.g. tmux session exists) */
     profileStatus: Record<string, ProfileStatus|undefined> = {}
@@ -592,6 +608,7 @@ export class ProfileTreeComponent extends BaseComponent implements AfterViewChec
     async onFilterChange (): Promise<void> {
         try {
             const q = this.filter.trim().toLowerCase()
+            this.quickConnectOptions = this.buildQuickConnectOptions(this.filter.trim())
 
             if (q.length === 0) {
                 this.rootGroups = this.profilesService.buildGroupTree(this.profileGroups)
@@ -620,6 +637,74 @@ export class ProfileTreeComponent extends BaseComponent implements AfterViewChec
             ]
         } catch (error) {
             console.error('Error occurred during search:', error)
+        }
+    }
+
+    ////// QUICK CONNECT //////
+
+    /**
+     * Every quick-connect provider that can parse the query gets a row; the one the text looks
+     * meant for (a device path -> serial, a telnet:// URL -> telnet, ...) goes first, then the
+     * configured default provider.
+     */
+    private buildQuickConnectOptions (query: string): QuickConnectOption[] {
+        if (!query) {
+            return []
+        }
+        const likely = this.guessQuickConnectProvider(query)
+        const options: QuickConnectOption[] = []
+        for (const provider of this.profilesService.getProviders()) {
+            if (!(provider instanceof QuickConnectProfileProvider)) {
+                continue
+            }
+            let profile: PartialProfile<Profile>|null = null
+            try {
+                profile = provider.quickConnect(query)
+            } catch {
+                continue
+            }
+            if (!profile) {
+                continue
+            }
+            options.push({
+                provider,
+                profile,
+                icon: profile.icon ?? QUICK_CONNECT_ICONS[provider.id] ?? 'fas fa-arrow-right',
+            })
+        }
+        const rank = (o: QuickConnectOption) => o.provider.id === likely ? 0 : o.provider.id === this.config.store.defaultQuickConnectProvider ? 1 : 2
+        return options.sort((a, b) => rank(a) - rank(b))
+    }
+
+    private guessQuickConnectProvider (query: string): string|null {
+        if (/^(\/dev\/|COM\d+)/i.test(query)) {
+            return 'serial'
+        }
+        const m = /^([a-z]+):\/\//i.exec(query)
+        return m ? m[1].toLowerCase() : null
+    }
+
+    launchQuickConnect (option: QuickConnectOption): void {
+        this.profilesService.openNewTabForProfile(deepClone(option.profile))
+    }
+
+    /** Keeps the quick-connect target as a sidebar profile so it can be reopened from the tree */
+    async saveQuickConnect (option: QuickConnectOption): Promise<void> {
+        const profile: PartialProfile<Profile> = deepClone(option.profile)
+        profile.icon = option.icon
+        await this.profilesService.newProfile(profile)
+        await this.config.save()
+        this.filter = ''
+        await this.onFilterChange()
+    }
+
+    /** Enter opens the first filter match, or connects to the typed address when nothing matches */
+    onFilterEnter (): void {
+        const match = this.rootGroups[0]?.profiles?.[0]
+        if (match) {
+            this.launchProfile(match)
+        } else if (this.quickConnectOptions.length) {
+            this.launchQuickConnect(this.quickConnectOptions[0])
         }
     }
 
