@@ -203,8 +203,18 @@ export class LocalProfilesService extends ProfileProvider<LocalProfile> {
         // When the pane's foreground program is ssh, show where it is connected instead of the
         // (meaningless) local directory of the ssh process
         const sshSessions = [...sessions.values()].filter(x => x.currentCommand === 'ssh' && x.shellPID)
-        if (sshSessions.length) {
+        // tmux names the foreground process after its executable, which for launchers such as
+        // Claude Code is a versioned binary ("2.1.326") rather than the command the user ran, so
+        // an unknown name is checked against the interactive programs in the pane's process tree
+        const unknownSessions = [...sessions.values()].filter(x => x.shellPID && this.isJobCommand(x.currentCommand))
+        if (sshSessions.length || unknownSessions.length) {
             const processes = await this.listProcesses()
+            for (const info of unknownSessions) {
+                const interactive = this.findInteractiveProcess(info.shellPID, processes)
+                if (interactive) {
+                    info.currentCommand = interactive
+                }
+            }
             for (const info of sshSessions) {
                 const ssh = this.findSSHProcess(info.shellPID, processes)
                 if (ssh) {
@@ -222,6 +232,30 @@ export class LocalProfilesService extends ProfileProvider<LocalProfile> {
             const m = /^\s*(\d+)\s+(\d+)\s+(.*)$/.exec(line)
             return m ? { pid: parseInt(m[1]), ppid: parseInt(m[2]), args: m[3] } : null
         }).filter((x): x is ProcessInfo => !!x)
+    }
+
+    /** Walks the pane shell's descendants and returns the name of the first interactive program found */
+    private findInteractiveProcess (shellPID: number, processes: ProcessInfo[]): string|null {
+        const queue = [shellPID]
+        const seen = new Set<number>()
+        while (queue.length) {
+            const pid = queue.shift()!
+            if (seen.has(pid)) {
+                continue
+            }
+            seen.add(pid)
+            for (const proc of processes) {
+                if (proc.ppid !== pid) {
+                    continue
+                }
+                const name = path.basename(proc.args.split(' ')[0]).replace(/^-/, '')
+                if (INTERACTIVE_COMMANDS.has(name)) {
+                    return name
+                }
+                queue.push(proc.pid)
+            }
+        }
+        return null
     }
 
     /** Walks the pane shell's descendants and returns the first ssh process found */
