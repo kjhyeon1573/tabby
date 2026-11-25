@@ -4,4 +4,48 @@
     select {
         width: auto;
     }
+
+    > .serial-input-bar {
+        flex: none;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 8px;
+        background: rgba(0, 0, 0, .25);
+        border-top: 1px solid rgba(255, 255, 255, .08);
+        z-index: 3;
+
+        .line-ending {
+            flex: none;
+            width: auto;
+        }
+
+        .input-line {
+            flex: auto;
+            min-width: 0;
+            font-family: monospace;
+        }
+
+        .send-button {
+            flex: none;
+            white-space: nowrap;
+        }
+
+        .baud-rate {
+            flex: none;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+
+            input {
+                width: 110px;
+                text-align: right;
+            }
+
+            .baud-label {
+                font-size: .75rem;
+                opacity: .6;
+            }
+        }
+    }
 }

@@ -9,6 +9,10 @@ export class SerialConfigProvider extends ConfigProvider {
             ],
             'restart-serial-session': [],
         },
+        serial: {
+            /** Show the send line / line ending / baud rate bar under serial terminals */
+            inputBar: true,
+        },
     }
 
     platformDefaults = { }

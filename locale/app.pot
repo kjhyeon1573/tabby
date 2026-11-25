@@ -1260,5 +1260,17 @@ msgstr ""
 msgid "Filter or enter an address"
 msgstr ""
 
+msgid "Input bar"
+msgstr ""
+
+msgid "Send"
+msgstr ""
+
+msgid "Type a line and press Enter to send"
+msgstr ""
+
+msgid "Line ending"
+msgstr ""
+
 msgid "You can also drag the inner edge of the tab bar; double-click it to reset"
 msgstr ""
