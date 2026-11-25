@@ -208,12 +208,28 @@ export class ProfileTreeComponent extends BaseComponent implements AfterViewChec
     async profileContextMenu (profile: PartialProfile<Profile>, event: MouseEvent): Promise<void> {
         event.preventDefault()
 
+        const open = this.isStateful(profile) ? this.findOpenTabForProfile(profile) : null
         this.platform.popupContextMenu([
             {
                 type: 'normal',
                 label: this.translate.instant('Run'),
                 click: () => this.launchProfile(profile),
             },
+            ...this.isStateful(profile) ? [
+                open && !this.app.isHiddenFromTabBar(open.top) ? {
+                    type: 'normal' as const,
+                    label: this.translate.instant('Hide from tab bar'),
+                    click: () => {
+                        for (const leaf of open.top instanceof SplitTabComponent ? open.top.getAllTabs() : [open.top]) {
+                            leaf.hiddenFromTabBar = true
+                        }
+                    },
+                } : {
+                    type: 'normal' as const,
+                    label: this.translate.instant('Open in tab bar'),
+                    click: () => this.launchProfile(profile, true),
+                },
+            ] : [],
             {
                 type: 'normal',
                 label: this.translate.instant('Edit profile'),
@@ -291,11 +307,18 @@ export class ProfileTreeComponent extends BaseComponent implements AfterViewChec
         super.ngOnDestroy()
     }
 
-    async launchProfile<P extends Profile> (profile: PartialProfile<P>): Promise<any> {
-        // Stateful profiles (e.g. a named tmux session) get a single tab: focus it if it is already open
-        if (profile.id && this.profileStatus[profile.id]) {
+    /**
+     * Stateful profiles (e.g. a named tmux session) get a single tab: focus it if it is already
+     * open. Their tabs stay out of the tab bar unless `showInTabBar` asks for one there.
+     */
+    async launchProfile<P extends Profile> (profile: PartialProfile<P>, showInTabBar = false): Promise<void> {
+        const stateful = this.isStateful(profile)
+        if (stateful) {
             const existing = this.findOpenTabForProfile(profile)
             if (existing) {
+                if (showInTabBar) {
+                    existing.tab.hiddenFromTabBar = false
+                }
                 this.app.selectTab(existing.top)
                 if (existing.top instanceof SplitTabComponent) {
                     existing.top.focus(existing.tab)
@@ -303,7 +326,53 @@ export class ProfileTreeComponent extends BaseComponent implements AfterViewChec
                 return
             }
         }
-        return this.profilesService.launchProfile(profile)
+        const unsubscribe = stateful ? this.markNextTab(!showInTabBar) : null
+        try {
+            await this.profilesService.launchProfile(profile)
+        } finally {
+            unsubscribe?.()
+        }
+    }
+
+    /** Sets hiddenFromTabBar on the tab the launch is about to open, before the tab bar renders it */
+    private markNextTab (hidden: boolean): () => void {
+        const known = new Set(this.app.tabs)
+        const subscription = this.app.tabOpened$.subscribe(tab => {
+            if (!known.has(tab)) {
+                for (const leaf of tab instanceof SplitTabComponent ? tab.getAllTabs() : [tab]) {
+                    leaf.hiddenFromTabBar = hidden
+                }
+                subscription.unsubscribe()
+            }
+        })
+        return () => {
+            subscription.unsubscribe()
+        }
+    }
+
+    isStateful (profile: PartialProfile<Profile>): boolean {
+        return !!profile.id && !!this.profileStatus[profile.id]
+    }
+
+    /** Whether the profile's open tab is the one being shown (its focused pane, for a split) */
+    isActiveProfile (profile: PartialProfile<Profile>): boolean {
+        const top = this.app.activeTab
+        const tab = top instanceof SplitTabComponent ? top.getFocusedTab() : top
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+        return !!profile.id && (tab as any)?.profile?.id === profile.id
+    }
+
+    /** Tabs of stateful profiles that nobody placed yet (opened elsewhere, or restored) leave the tab bar */
+    private hideUndecidedStatefulTabs (): void {
+        for (const top of this.app.tabs) {
+            for (const tab of top instanceof SplitTabComponent ? top.getAllTabs() : [top]) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+                const id = (tab as any).profile?.id
+                if (tab.hiddenFromTabBar === null && id && this.profileStatus[id]) {
+                    tab.hiddenFromTabBar = true
+                }
+            }
+        }
     }
 
     onProfileRowEnter (event: MouseEvent): void {
@@ -505,6 +574,7 @@ export class ProfileTreeComponent extends BaseComponent implements AfterViewChec
             }
         }))
         this.profileStatus = next
+        this.hideUndecidedStatefulTabs()
         this.updateAttention(profiles, next)
     }
 

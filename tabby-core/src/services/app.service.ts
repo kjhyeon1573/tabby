@@ -337,31 +337,48 @@ export class AppService {
         this._mruTabs = [selectedTab, ...this._mruTabs.filter(t => t !== selectedTab)]
     }
 
+    /** A top-level tab is left out of the tab bar when every pane in it asked to be */
+    isHiddenFromTabBar (tab: BaseTabComponent): boolean {
+        const leaves = tab instanceof SplitTabComponent ? tab.getAllTabs() : [tab]
+        return leaves.length > 0 && leaves.every(t => t.hiddenFromTabBar === true)
+    }
+
+    /** The tabs shown in the tab bar, in order */
+    get visibleTabs (): BaseTabComponent[] {
+        return this.tabs.filter(t => !this.isHiddenFromTabBar(t))
+    }
+
+    /** Next / previous walk the tab bar, so they skip tabs hidden from it */
     nextTab (): void {
-        if (!this._activeTab) {
-            return
-        }
-        if (this.tabs.length > 1) {
-            const tabIndex = this.tabs.indexOf(this._activeTab)
-            if (tabIndex < this.tabs.length - 1) {
-                this.selectTab(this.tabs[tabIndex + 1])
-            } else if (this.config.store.appearance.cycleTabs) {
-                this.selectTab(this.tabs[0])
-            }
-        }
+        this.stepVisibleTab(1)
     }
 
     previousTab (): void {
+        this.stepVisibleTab(-1)
+    }
+
+    private stepVisibleTab (direction: 1|-1): void {
         if (!this._activeTab) {
             return
         }
-        if (this.tabs.length > 1) {
-            const tabIndex = this.tabs.indexOf(this._activeTab)
-            if (tabIndex > 0) {
-                this.selectTab(this.tabs[tabIndex - 1])
-            } else if (this.config.store.appearance.cycleTabs) {
-                this.selectTab(this.tabs[this.tabs.length - 1])
-            }
+        const tabs = this.visibleTabs
+        if (!tabs.length) {
+            return
+        }
+        const tabIndex = tabs.indexOf(this._activeTab)
+        if (tabIndex < 0) {
+            // a hidden tab is active: enter the tab bar from its start / end
+            this.selectTab(direction > 0 ? tabs[0] : tabs[tabs.length - 1])
+            return
+        }
+        if (tabs.length < 2) {
+            return
+        }
+        const target = tabIndex + direction
+        if (target >= 0 && target < tabs.length) {
+            this.selectTab(tabs[target])
+        } else if (this.config.store.appearance.cycleTabs) {
+            this.selectTab(tabs[(target + tabs.length) % tabs.length])
         }
     }
 

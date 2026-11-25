@@ -7,6 +7,7 @@ export interface RecoveryToken {
     tabIcon?: string|null
     tabColor?: string|null
     tabPinned?: boolean
+    tabHiddenFromTabBar?: boolean|null
     tabCustomTitleVisible?: boolean
 }
 

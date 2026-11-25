@@ -37,7 +37,7 @@ title-bar(
                 cdkAutoDropGroup='app-tabs'
             )
                 tab-header(
-                    *ngFor='let tab of app.tabs; let idx = index',
+                    *ngFor='let tab of app.visibleTabs; let idx = index',
                     [index]='idx',
                     [tab]='tab',
                     [active]='tab == app.activeTab',
