@@ -350,6 +350,29 @@ export class ProfileTreeComponent extends BaseComponent implements AfterViewChec
         }
     }
 
+    /** Whether a tab (or split pane) running this profile is open */
+    hasOpenTab (profile: PartialProfile<Profile>): boolean {
+        return !!this.findOpenTabForProfile(profile)
+    }
+
+    /**
+     * Closes the profile's open tab from the sidebar (serial ports, tools such as airoha). The
+     * usual "process still running" check applies; a pane inside a split closes only that pane.
+     */
+    async closeProfileTab (profile: PartialProfile<Profile>): Promise<void> {
+        const open = this.findOpenTabForProfile(profile)
+        if (!open) {
+            return
+        }
+        if (open.top === open.tab) {
+            await this.app.closeTab(open.top, true)
+            return
+        }
+        if (await open.tab.canClose()) {
+            open.tab.destroy()
+        }
+    }
+
     isStateful (profile: PartialProfile<Profile>): boolean {
         return !!profile.id && !!this.profileStatus[profile.id]
     }
