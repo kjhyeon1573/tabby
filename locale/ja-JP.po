@@ -2603,5 +2603,17 @@ msgstr "サイドタブバーの幅"
 msgid "Filter or enter an address"
 msgstr "フィルター、またはアドレスを入力"
 
+msgid "Input bar"
+msgstr "入力バー"
+
+msgid "Send"
+msgstr "送信"
+
+msgid "Type a line and press Enter to send"
+msgstr "送信する行を入力して Enter"
+
+msgid "Line ending"
+msgstr "改行コード"
+
 msgid "You can also drag the inner edge of the tab bar; double-click it to reset"
 msgstr "タブバーの内側の端をドラッグしても調整でき、ダブルクリックで初期値に戻ります"

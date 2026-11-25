@@ -5,6 +5,10 @@ terminal-toolbar([tab]='this')
 
     .me-auto
 
+    button.btn.btn-sm.btn-link.me-3((click)='toggleInputBar()', [class.active]='inputBarVisible')
+        i.fas.fa-keyboard
+        span(translate) Input bar
+
     button.btn.btn-sm.btn-link.me-3((click)='changeBaudRate()', *ngIf='session && session.open && hostApp.platform !== Platform.Web')
         span(translate) Change baud rate
 
@@ -19,3 +23,39 @@ terminal-toolbar([tab]='this')
     button.btn.btn-sm.btn-link((click)='reconnect()', *ngIf='!session || !session.open')
         i.fas.fa-plug
         span(translate) Connect
+
+.serial-input-bar(*ngIf='inputBarVisible')
+    select.form-select.form-select-sm.line-ending(
+        [(ngModel)]='lineEnding',
+        [title]='"Line ending"|translate'
+    )
+        option(*ngFor='let ending of lineEndings', [ngValue]='ending.value') {{ending.name}}
+    input.form-control.form-control-sm.input-line(
+        type='text',
+        autocomplete='off',
+        spellcheck='false',
+        [(ngModel)]='inputLine',
+        [disabled]='!session?.open',
+        [placeholder]='"Type a line and press Enter to send"|translate',
+        (keydown.enter)='sendInputLine()',
+        (keydown.arrowup)='recallInput(-1); $event.preventDefault()',
+        (keydown.arrowdown)='recallInput(1); $event.preventDefault()',
+        (keydown.escape)='focusTerminal()'
+    )
+    button.btn.btn-sm.btn-secondary.send-button((click)='sendInputLine()', [disabled]='!session?.open')
+        i.fas.fa-paper-plane
+        span.ms-1(translate) Send
+    .baud-rate([title]='"Baud rate"|translate')
+        input.form-control.form-control-sm(
+            type='text',
+            inputmode='numeric',
+            autocomplete='off',
+            [attr.list]='baudListId',
+            [(ngModel)]='baudRateInput',
+            [disabled]='!session?.open',
+            (keydown.enter)='applyBaudRate(); $event.preventDefault()',
+            (blur)='applyBaudRate()'
+        )
+        datalist([id]='baudListId')
+            option(*ngFor='let rate of baudRates', [value]='rate')
+        span.baud-label baud

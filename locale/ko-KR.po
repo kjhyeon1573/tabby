@@ -2603,5 +2603,17 @@ msgstr "세로 탭 바 너비"
 msgid "Filter or enter an address"
 msgstr "필터 또는 주소 입력"
 
+msgid "Input bar"
+msgstr "입력 바"
+
+msgid "Send"
+msgstr "보내기"
+
+msgid "Type a line and press Enter to send"
+msgstr "보낼 내용을 입력하고 Enter"
+
+msgid "Line ending"
+msgstr "줄 끝 문자"
+
 msgid "You can also drag the inner edge of the tab bar; double-click it to reset"
 msgstr "탭 바 안쪽 가장자리를 드래그해도 조절되며, 더블클릭하면 기본값으로 돌아갑니다"
