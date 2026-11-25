@@ -2615,5 +2615,17 @@ msgstr "보낼 내용을 입력하고 Enter"
 msgid "Line ending"
 msgstr "줄 끝 문자"
 
+msgid "Use %s baud"
+msgstr "%s baud로 실행"
+
+msgid "Add %s to the baud rate list"
+msgstr "%s를 baud 목록에 추가"
+
+msgid "Add to the baud rate list"
+msgstr "baud 목록에 추가"
+
+msgid "\"{text}\" is not a baud rate"
+msgstr "\"{text}\"는 baud 값이 아닙니다"
+
 msgid "You can also drag the inner edge of the tab bar; double-click it to reset"
 msgstr "탭 바 안쪽 가장자리를 드래그해도 조절되며, 더블클릭하면 기본값으로 돌아갑니다"

@@ -2,7 +2,7 @@
 import { Component } from '@angular/core'
 import { debounceTime, distinctUntilChanged, map } from 'rxjs'
 import { FullyDefined, HostAppService, Platform, ProfileSettingsComponent } from 'tabby-core'
-import { SerialPortInfo, BAUD_RATES, SerialProfile } from '../api'
+import { SerialPortInfo, SerialProfile } from '../api'
 import { SerialService } from '../services/serial.service'
 import { SerialProfilesService } from '../profiles'
 
@@ -29,7 +29,7 @@ export class SerialProfileSettingsComponent implements ProfileSettingsComponent<
         distinctUntilChanged(),
         map((q: string) => [
             null,
-            ...BAUD_RATES.filter(x => !q || x.toString().startsWith(q)),
+            ...this.serial.getBaudRates().filter(x => !q || x.toString().startsWith(q)),
         ]),
     )
 

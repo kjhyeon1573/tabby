@@ -12,6 +12,8 @@ export class SerialConfigProvider extends ConfigProvider {
         serial: {
             /** Show the send line / line ending / baud rate bar under serial terminals */
             inputBar: true,
+            /** Baud rates added by the user on top of the presets */
+            customBaudRates: [],
         },
     }
 

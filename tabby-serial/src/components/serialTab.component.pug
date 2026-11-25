@@ -59,3 +59,9 @@ terminal-toolbar([tab]='this')
         datalist([id]='baudListId')
             option(*ngFor='let rate of baudRates', [value]='rate')
         span.baud-label baud
+        button.btn.btn-sm.btn-link.add-baud-rate(
+            *ngIf='!baudRateListed',
+            (click)='addCurrentBaudRate()',
+            [title]='"Add to the baud rate list"|translate'
+        )
+            i.fas.fa-plus
