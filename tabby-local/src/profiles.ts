@@ -186,7 +186,10 @@ export class LocalProfilesService extends ProfileProvider<LocalProfile> {
     }
 
     private async queryTmuxSessions (command: string): Promise<Map<string, TmuxSessionInfo>> {
-        const [stdout] = await execFile(command, ['list-sessions', '-F', `#S\t#{pane_pid}\t#{pane_current_command}\t#{${TMUX_ATTENTION_OPTION}}\t#{${TMUX_WORKING_OPTION}}\t#{window_activity}\t#{pane_current_path}`])
+        // Without a UTF-8 locale in its environment (none is set when the app is launched from the
+        // Dock or a desktop launcher) tmux sanitises its output, turning the tab separators and any
+        // non-ASCII path into "_"; -u declares UTF-8 output regardless of the environment
+        const [stdout] = await execFile(command, ['-u', 'list-sessions', '-F', `#S\t#{pane_pid}\t#{pane_current_command}\t#{${TMUX_ATTENTION_OPTION}}\t#{${TMUX_WORKING_OPTION}}\t#{window_activity}\t#{pane_current_path}`])
         const sessions = new Map<string, TmuxSessionInfo>()
         for (const line of stdout.toString().split('\n').filter(x => x)) {
             const [name, pid, currentCommand, attention, working, activity, ...rest] = line.split('\t')
