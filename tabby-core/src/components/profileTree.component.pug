@@ -67,6 +67,12 @@
                                     [title]='"Open in tab bar"|translate'
                                 )
                                     .fa.fa-fw.far.fa-window-maximize
+                                .action(
+                                    *ngIf='!isStateful(profile) && hasOpenTab(profile)',
+                                    (click)='closeProfileTab(profile)',
+                                    [title]='"Close tab"|translate'
+                                )
+                                    .fa.fa-fw.fas.fa-times
                                 .action((click)='launchProfile(profile)')
                                     .fa.fa-fw.fas.fa-play
 
