@@ -1272,5 +1272,17 @@ msgstr ""
 msgid "Line ending"
 msgstr ""
 
+msgid "Use %s baud"
+msgstr ""
+
+msgid "Add %s to the baud rate list"
+msgstr ""
+
+msgid "Add to the baud rate list"
+msgstr ""
+
+msgid "\"{text}\" is not a baud rate"
+msgstr ""
+
 msgid "You can also drag the inner edge of the tab bar; double-click it to reset"
 msgstr ""

@@ -2,9 +2,10 @@
 import { marker as _ } from '@biesbjerg/ngx-translate-extract-marker'
 import colors from 'ansi-colors'
 import { Component, Injector } from '@angular/core'
-import { Platform, SelectorService } from 'tabby-core'
+import { Platform, SelectorService, SelectorOption } from 'tabby-core'
 import { BaseTerminalTabComponent, ConnectableTerminalTabComponent, NewlineMode } from 'tabby-terminal'
-import { SerialSession, BAUD_RATES, SerialProfile } from '../api'
+import { SerialSession, SerialProfile } from '../api'
+import { SerialService } from '../services/serial.service'
 
 const INPUT_HISTORY_SIZE = 100
 
@@ -26,7 +27,6 @@ export class SerialTabComponent extends ConnectableTerminalTabComponent<SerialPr
         { name: 'CRLF', value: 'crlf' },
     ]
 
-    baudRates = BAUD_RATES
     baudListId = `serial-baud-rates-${Math.random().toString(36).slice(2)}`
     inputLine = ''
     baudRateInput = ''
@@ -40,6 +40,7 @@ export class SerialTabComponent extends ConnectableTerminalTabComponent<SerialPr
     constructor (
         injector: Injector,
         private selector: SelectorService,
+        private serialService: SerialService,
     ) {
         super(injector)
         this.enableToolbar = true
@@ -173,9 +174,19 @@ export class SerialTabComponent extends ConnectableTerminalTabComponent<SerialPr
         this.frontend?.focus()
     }
 
+    /** Presets plus the rates the user added */
+    get baudRates (): number[] {
+        return this.serialService.getBaudRates()
+    }
+
+    /** Whether the current rate is one the pickers already offer */
+    get baudRateListed (): boolean {
+        return !this.profile.options.baudrate || this.baudRates.includes(this.profile.options.baudrate)
+    }
+
     /** Applies the rate typed into the input bar; any positive number is accepted, not only the presets */
     applyBaudRate (): void {
-        const rate = parseInt(this.baudRateInput.replace(/[^\d]/g, ''))
+        const rate = this.parseBaudRate(this.baudRateInput)
         if (!rate || rate === this.profile.options.baudrate) {
             this.baudRateInput = this.profile.options.baudrate?.toString() ?? ''
             return
@@ -183,14 +194,62 @@ export class SerialTabComponent extends ConnectableTerminalTabComponent<SerialPr
         this.setBaudRate(rate)
     }
 
-    async changeBaudRate () {
-        const rate = await this.selector.show(
-            this.translate.instant(_('Baud rate')),
-            BAUD_RATES.map(x => ({
-                name: x.toString(), result: x, weight: x,
-            })),
-        )
+    /** Remembers the current rate in the list offered by the pickers */
+    async addCurrentBaudRate (): Promise<void> {
+        if (this.profile.options.baudrate) {
+            await this.serialService.addBaudRate(this.profile.options.baudrate)
+        }
+    }
+
+    /** Picker with the known rates; typing another number offers to use it once or to add it to the list */
+    async changeBaudRate (): Promise<void> {
+        const options: SelectorOption<number|null>[] = [
+            ...this.baudRates.map(x => ({ name: x.toString(), result: x, weight: x })),
+            {
+                name: '',
+                freeInputPattern: this.translate.instant(_('Use %s baud')),
+                icon: 'fas fa-play',
+                result: null,
+                weight: 1,
+                callback: text => this.useTypedBaudRate(text, false),
+            },
+            {
+                name: '',
+                freeInputPattern: this.translate.instant(_('Add %s to the baud rate list')),
+                icon: 'fas fa-plus',
+                result: null,
+                weight: 2,
+                callback: text => this.useTypedBaudRate(text, true),
+            },
+        ]
+        const rate = await this.selector.show(this.translate.instant(_('Baud rate')), options).catch(() => null)
+        if (rate) {
+            this.setBaudRate(rate)
+        }
+    }
+
+    private async useTypedBaudRate (text: string|undefined, remember: boolean): Promise<void> {
+        const rate = this.parseBaudRate(text ?? '')
+        if (!rate) {
+            this.notifications.error(this.translate.instant(_('"{text}" is not a baud rate'), { text }))
+            return
+        }
+        if (remember) {
+            await this.serialService.addBaudRate(rate)
+        }
         this.setBaudRate(rate)
+    }
+
+    /** Accepts plain numbers and k / M suffixes, e.g. "3000000", "3M", "1.5M", "115.2k" */
+    private parseBaudRate (text: string): number|null {
+        const m = /^\s*(\d+(?:\.\d+)?)\s*([kKmM])?\s*$/.exec(text.replace(/[,_]/g, ''))
+        if (!m) {
+            return null
+        }
+        const suffix: string|undefined = m[2]
+        const scale = suffix ? (suffix.toLowerCase() === 'k' ? 1e3 : 1e6) : 1
+        const rate = Math.round(parseFloat(m[1]) * scale)
+        return rate > 0 ? rate : null
     }
 
     private setBaudRate (rate: number): void {
